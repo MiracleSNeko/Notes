@@ -62,7 +62,7 @@
 
   > 下列 `bash` 操作如无特殊说明，均是在 `root` 账户 `~` 目录下完成
   >
-  > 参考了[这篇](https://blog.csdn.net/ErnestW/article/details/88929968?utm_medium=distribute.pc_relevant_t0.none-task-blog-BlogCommendFromMachineLearnPai2-1.edu_weight&depth_1-utm_source=distribute.pc_relevant_t0.none-task-blog-BlogCommendFromMachineLearnPai2-1.edu_weight)和[这篇]([https://blog.csdn.net/aic1999/article/details/104660016#9-hadoop%E4%BC%AA%E5%88%86%E5%B8%83%E5%BC%8F%E5%AE%89%E8%A3%85%E9%85%8D%E7%BD%AEhdfs](https://blog.csdn.net/aic1999/article/details/104660016#9-hadoop伪分布式安装配置hdfs))文章
+  > 参考了[这篇](https://blog.csdn.net/ErnestW/article/details/88929968?utm_medium=distribute.pc_relevant_t0.none-task-blog-BlogCommendFromMachineLearnPai2-1.edu_weight&depth_1-utm_source=distribute.pc_relevant_t0.none-task-blog-BlogCommendFromMachineLearnPai2-1.edu_weight)和[这篇](https://blog.csdn.net/aic1999/article/details/104660016#9-hadoop%E4%BC%AA%E5%88%86%E5%B8%83%E5%BC%8F%E5%AE%89%E8%A3%85%E9%85%8D%E7%BD%AEhdfs)文章
 
   - 安装过程略，建议使用[这个镜像](https://mirrors.bfsu.edu.cn/centos/7.8.2003/isos/x86_64/CentOS-7-x86_64-Minimal-2003.iso)
 
@@ -272,7 +272,6 @@
     >        <value>false</value>
     >   </property>
     [hadoop] $ cd /usr/local/hadoop/hadoop-3.2.1/sbin
-    
     [sbin] $ vim start-dfs.sh
     # 添加以下行
     > HDFS_DATANODE_USER=root
@@ -309,7 +308,7 @@
     > Slave1
     > Slave2
     ```
-
+    
   - 启动 Hadoop
 
     ```bash
@@ -319,6 +318,22 @@
     [sbin] $ ./start-all.sh
     # $ ./stop-all.sh
     ```
+    
 
+- Hadoop 运行模式
 
-
+  - 本地运行模式
+    - 参考官方文档，注意每次需要删除 output 文件夹
+  - 伪分布式运行模式
+    - 配置同完全分布式，但是只有 Master 机
+    - 上传文件 `bin/hdfs dfs -put`
+    - 格式化 NameNode 注意事项
+      1. 在 `dfs/name/current/VERSION` 文件里有 `clusterID`
+      2. 在 `dfs/data/current/VERSION` 里一样有 `clusterID` 并且跟上面的一样
+      3. 重新格式化时，两边的 `clusterID` 不一样，无法通讯， DataNode 和 NameNode 无法通信
+      4. 重新格式化之前，需要删除 DataNode 里面的信息
+    - 启动 YARN 并运行 MapReduce 程序
+      1. 在 `yarn-env.sh` 里配置 `JAVA_HOME`
+      2. 在 `mapred-env.sh` 里配置 `JAVA_HOME`
+  - 完全分布式运行模式
+    - 
