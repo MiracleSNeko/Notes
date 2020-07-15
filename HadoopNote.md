@@ -78,15 +78,16 @@
     > IPADDR=192.168.38.129
     > GATEWAY=192.168.38.2
     > NETMASK=255.255.255.0
+    # 应该修改DNS为114或8
     # 在文件中修改下列行
     > BOOTPROTO=none
     > ONBOOT=yes
     $ service network restart
     Restarting network (via systemctl):				[ OK ]
-    ```
-
-  - 网络连接设置完成后，换源
-
+  ```
+  
+- 网络连接设置完成后，换源
+  
     ```bash
     $ mv /etc/yum.repos.d/CentOS-Base.repo /etc/yum.repos.d/CentOS-Base.repo.backup
     $ wget -O /etc/yum.repos.d/CentOS-Base.repo http://mirrors.aliyun.com/repo/Centos-7.repo
@@ -101,10 +102,10 @@
     $ wget -O /etc/yum.repos.d/epel-7.repo http://mirrors.aliyun.com/repo/epel-7.repo
     $ yum clean all
     $ yum makecache
-    ```
-
-  - 更改 Hosts
-
+  ```
+  
+- 更改 Hosts
+  
     ```bash
     $ vi /etc/hosts
     # 在文件中添加如下行
@@ -114,20 +115,20 @@
     $ vi /etc/hostname
     # 在文件中修改，对两台 Slave 从机做同样操作
     > Master
-    ```
-
-  - 安装 Jdk-1.8 和 Hadoop 
-
+  ```
+  
+- 安装 Jdk-1.8 和 Hadoop 
+  
     > Oracle 账号密码来自[这篇文章](https://blog.csdn.net/u010590120/article/details/94736800?utm_medium=distribute.pc_relevant_t0.none-task-blog-BlogCommendFromMachineLearnPai2-1.edu_weight&depth_1-utm_source=distribute.pc_relevant_t0.none-task-blog-BlogCommendFromMachineLearnPai2-1.edu_weight)，由于直接下载会存在无法解压的问题，所以在 Windows 本地下载再通过 scp 上传到虚拟机 
     >
-    > <del>(傻逼 Oracle) </del>
-
+  > <del>(傻逼 Oracle) </del>
+  
     ```powershell
     PS E:\MSN\Downloads> scp .\jdk-8u251-linux-x64.tar.gz root@192.168.38.129:/root/jdk-8u251-linux-x64.tar.gz
     root@192.168.38.129's password:
     jdk-8u251-linux-x64.tar.gz                                                            100%  186MB 114.9MB/s   00:01
-    ```
-
+  ```
+  
     ```bash
     $ tar -zxvf jdk-8u251-linux-x64.tar.gz -C /usr/local/java
     $ vim /etc/profile
@@ -139,25 +140,23 @@
     $ source /etc/profile
     $ wget https://mirrors.aliyun.com/apache/hadoop/core/hadoop-3.2.1/hadoop-3.2.1.tar.gz
     $ tar -zxvf hadoop-3.2.1.tar.gz -C /usr/local/hadoop
-    ```
-
-  - 完成上述操作后，使用 VMWare 的克隆虚拟机功能，克隆 Master 为 Slave1 和 Slave2 两个从机，并且修改各自的 ip 和 hostname，互相 ping 通既为完成
-
-  - 配置密钥
-
+  ```
+  
+- 配置密钥
+  
     ```bash
-    $ ssh-keygen -t rsa -P ''
+  $ ssh-keygen -t rsa -P ''
     $ cd /root/.ssh
     [.ssh] $ touch /root/.ssh/authorized_keys
     [.ssh] $ vim authorized_keys
     # 将三台虚拟机的 id_rsa.pub 全部保存至 authorized_keys 中，之后用 ssh 测试链接
     [.ssh] $ ssh Master # 或 Slave1 Slave2
     ```
-
-  - 配置 Hadoop
-
+  
+- 配置 Hadoop
+  
     ```bash
-    $ mkdir /root/hadoop
+  $ mkdir /root/hadoop
     $ mkdir /root/hadoop/tmp
     $ mkdir /root/hadoop/var
     $ mkdir /root/hadoop/dfs
@@ -310,20 +309,22 @@
     ```
     
   - 启动 Hadoop
-
+  
     ```bash
-    $ cd /usr/local/hadoop/hadoop-3.2.1/bin
+  $ cd /usr/local/hadoop/hadoop-3.2.1/bin
     [bin] $ ./hadoop namenode -format
     [bin] $ cd /usr/local/hadoop/hadoop-3.2.1/sbin
     [sbin] $ ./start-all.sh
     # $ ./stop-all.sh
     ```
     
-
+  
 - Hadoop 运行模式
 
   - 本地运行模式
+    
     - 参考官方文档，注意每次需要删除 output 文件夹
+    
   - 伪分布式运行模式
     - 配置同完全分布式，但是只有 Master 机
     - 上传文件 `bin/hdfs dfs -put`
@@ -335,5 +336,127 @@
     - 启动 YARN 并运行 MapReduce 程序
       1. 在 `yarn-env.sh` 里配置 `JAVA_HOME`
       2. 在 `mapred-env.sh` 里配置 `JAVA_HOME`
+    
   - 完全分布式运行模式
-    - 
+
+    - rsync 更新差异文件，主要用于备份和镜像
+    - xsync 集群分发脚本，循环复制文件到所有节点的相同目录下
+
+    ```bash
+    #!/bin/bash
+    
+    pcount=$#
+    if((pcount==0)); then
+    echo no args;
+    exit;
+    fi
+    
+    p1=$1
+    fname=`basename $p1`
+    echo fname=$fname
+    
+    pdir=`cd -P $(dirname $p1); pwd`
+    echo pdir=$pdir
+    
+    user=`whoami`
+    
+    for((snum=1; snum<3; snum++)); do
+    	echo -----Slave$snum-----
+    	srync -rvl $pdir/$fname $user@Slave$snum:$pdir
+    done
+    ```
+
+    - 可以把 NameNode，ResourceManager 和 SecondaryNameNode 放在不同节点，配置 .xml 文件即可
+    - 上传数据
+
+    ```bash
+    $ bin/hdfs $target_dir dsf -put $source_dir
+    ```
+
+    - 上传的数据储存在 `data/tmp/dfs/data/current/$ClusterID/current/finalized/subdir`
+    - YARN 应该在 ResourceManager 所在的机器上启动
+
+
+
+
+## 3. HDFS
+
+### 3.1 HDFS 概述
+
+- HDFS 是分布式文件管理系统，通过**目录树**来定位文件
+- HDFS 适合一次写入多次读出的场景，且不支持文件的修改，适合用来数据分析，并不适合网盘应用
+- 优点
+  - 高容错性：数据自动保存多个副本，某一个副本丢失后可以自动恢复
+  - 适合处理大数据：处理规模最高可达 `PB` 级别和百万以上规模的文件数量
+  - 可构建在廉价机器上
+- 缺点
+  - 不适合低延时的数据访问
+  - 无法高效的对大量小文件进行存储：储存大量小文件会占用 NameNode 大量的内存储存文件目录和块信息
+  - 不支持并发写入和文件随机修改：一个文件只能由一个写，且只支持数据的追加
+- HDFS 组成架构
+  - NameNode：储存了 Metadata。管理 HDFS 的名称空间和 Block 映射信息，配置副本策略和处理客户端读写请求
+  - DataNode：储存 Blocks，执行 Blocks 的读写操作
+  - Client：客户端。进行文件切分上传，与 NameNode 交互获取文件位置信息，与 DataNode 交互读写数据，管理和访问 HDFS
+  - SecondaryNameNode：辅助 NameNode工作，如定期合并 Fsimage 和 Edits 并推送给 NameNode；紧急情况下辅助回复 NameNode。不是 NameNode 的热备份
+- HDFS 的 Blocks 大小
+  - 通过参数 `dfs.blocksize` 确定， 2.x 版本默认为 128 MB，1.x 版本默认是 64 MB
+  - 寻址时间为传输时间的 1% 时为最佳状态
+  - Blocks 太小，会增加寻址时间；Blocks 太大，从磁盘传输数据的时间会明显大于定位这个块开始位置所需的时间（即寻址时间），导致程序处理数据时过慢
+
+### 3.2 HDFS Shell 命令
+
+> 基本语法：`bin/hadoop fs command` 或者 `bin/hdfs dfs command`。`dfs` 是 `fs` 的实现类。
+
+- 输入 `dfs` 或 `fs` 会显示命令参数列表
+- 常用命令
+  - `-help` 输出命令参数
+  - `-ls` 查看目录信息
+  - `-mkdir` 创建目录
+  - `-moveFromLocal` 从本地上传到 HDFS（剪切）
+  -  `-appendToFile` 追加内容到文件末尾
+  - `-cat` 查看文件内容
+  - `-chgrp` `-chown` `-chmod` 修改文件所属权限
+  - `-copyFromLocal` 从本地复制到 HDFS
+  - `-copyToLocal` 从 HDFS 复制到本地
+  - `-cp` 从 HDFS 路径复制到另一个 HDFS 路径
+  -  `-mv` 从 HDFS 路径移动到另一个 HDFS 路径
+  - `-get ` 等于 `-copyToLocal`
+  - `-put` 等于 `-copyFromLocal`
+  - `-getmerge` 合并下载多个文件
+  - `-tail` 显示文件末尾
+  - `-rm` 删除文件或文件夹
+  - `-rmdir` 删除空目录
+  - `-du` 统计文件夹大小信息
+  - `-setrep` 设置 HDFS 中文件的副本数量
+
+### 3.3 HDFS API 操作
+
+- 在 Java 代码中，通过 FileSystem 提供的与 Shell 命令同名的方法进行操作
+
+- 参数优先级顺序：客户端代码中的设置 > ClassPath 下用户自定义配置文件 > 服务器默认配置
+- 如果 API 没有提供需要的操作，需要通过 IO 流进行操作
+
+### 3.4 HDFS 数据流
+
+- 数据写入流程
+
+  1. 客户端向 NameNode 请求上传文件
+  2. NameNode 响应可以上传文件
+  3. 请求上传第一个 Block，返回 DataNode
+  4. NameNode 返回 DataNode 节点
+  5. 客户端请求与 DataNode 建立通道
+  6. DataNode 应答成功
+  7. 传输数据 Packet
+  8. 通知 NameNode 传输完成
+
+- 网络拓扑-节点距离计算
+
+  - 节点距离：两个节点到达最近的共同祖先的距离总和
+
+  
+
+  
+
+  
+
+  
