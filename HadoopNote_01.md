@@ -1,4 +1,4 @@
-# Hadoop 笔记
+# Hadoop 概述
 
 > 尚硅谷Hadoop教程：BV1cW411r7c5
 
@@ -78,13 +78,13 @@
     > IPADDR=192.168.38.129
     > GATEWAY=192.168.38.2
     > NETMASK=255.255.255.0
-    # 应该修改DNS为114或8
+    > DNS1=114.114.114.114
     # 在文件中修改下列行
     > BOOTPROTO=none
     > ONBOOT=yes
     $ service network restart
     Restarting network (via systemctl):				[ OK ]
-  ```
+    ```
   
 - 网络连接设置完成后，换源
   
@@ -127,7 +127,7 @@
     PS E:\MSN\Downloads> scp .\jdk-8u251-linux-x64.tar.gz root@192.168.38.129:/root/jdk-8u251-linux-x64.tar.gz
     root@192.168.38.129's password:
     jdk-8u251-linux-x64.tar.gz                                                            100%  186MB 114.9MB/s   00:01
-  ```
+    ```
   
     ```bash
     $ tar -zxvf jdk-8u251-linux-x64.tar.gz -C /usr/local/java
@@ -140,7 +140,7 @@
     $ source /etc/profile
     $ wget https://mirrors.aliyun.com/apache/hadoop/core/hadoop-3.2.1/hadoop-3.2.1.tar.gz
     $ tar -zxvf hadoop-3.2.1.tar.gz -C /usr/local/hadoop
-  ```
+    ```
   
 - 配置密钥
   
@@ -151,11 +151,11 @@
     [.ssh] $ vim authorized_keys
     # 将三台虚拟机的 id_rsa.pub 全部保存至 authorized_keys 中，之后用 ssh 测试链接
     [.ssh] $ ssh Master # 或 Slave1 Slave2
-    ```
+  ```
   
 - 配置 Hadoop
-  
-    ```bash
+
+  ```bash
   $ mkdir /root/hadoop
     $ mkdir /root/hadoop/tmp
     $ mkdir /root/hadoop/var
@@ -306,10 +306,34 @@
     > Master
     > Slave1
     > Slave2
-    ```
-    
+  ```
+
+  >   如果运行示例时报错
+  >
+  >   ```xml
+  >   Please check whether your etc/hadoop/mapred-site.xml contains the below configuration:
+  >   <property>
+  >     <name>yarn.app.mapreduce.am.env</name>
+  >     <value>HADOOP_MAPRED_HOME=${full path of your hadoop distribution directory}</value>
+  >   </property>
+  >   <property>
+  >     <name>mapreduce.map.env</name>
+  >     <value>HADOOP_MAPRED_HOME=${full path of your hadoop distribution directory}</value>
+  >   </property>
+  >   <property>
+  >     <name>mapreduce.reduce.env</name>
+  >     <value>HADOOP_MAPRED_HOME=${full path of your hadoop distribution directory}</value>
+  >   </property>
+  >   ```
+  >
+  >   则把 `${full path of your hadoop distribution directory}` 改成安装 hadoop 的位置
+  >
+  >   ```xml
+  >   <value>HADOOP_MAPRED_HOME=/usr/local/hadoop/hadoop-3.2.1</value>
+  >   ```
+
   - 启动 Hadoop
-  
+
     ```bash
   $ cd /usr/local/hadoop/hadoop-3.2.1/bin
     [bin] $ ./hadoop namenode -format
@@ -318,7 +342,7 @@
     # $ ./stop-all.sh
     ```
     
-  
+
 - Hadoop 运行模式
 
   - 本地运行模式
@@ -439,7 +463,6 @@
 ### 3.4 HDFS 数据流
 
 - 数据写入流程
-
   1. 客户端向 NameNode 请求上传文件
   2. NameNode 响应可以上传文件
   3. 请求上传第一个 Block，返回 DataNode
@@ -448,15 +471,344 @@
   6. DataNode 应答成功
   7. 传输数据 Packet
   8. 通知 NameNode 传输完成
-
 - 网络拓扑-节点距离计算
-
   - 节点距离：两个节点到达最近的共同祖先的距离总和
+- 机架感知（副本储存节点选择）
+  - 以三个为例。第一个副本位于 Client 所处节点上。如果客户端在集群外，随机选一个
+  - 第二个副本和第一个副本位于相同机架上，随机节点
+  - 第三个副本位于不同机架随机节点
+- 数据读取流程
+  - 客户端向 NameNode 请求下载文件
+  - NameNode 返回文件的元数据
+  - 客户端向 DataNode 请求读取数据
+  - DataNode 传输数据
+  - 对所有储存了待下载文件块对 DataNode 重复上述两个操作
 
-  
+### 3.5 HDFS 2.X 新特性
 
-  
+- 集群间数据拷贝 `dictcp`
+- 小文件存档 HAR 将文件存入 HDFS块，是独立小文件，但是对 NN 而言是一个整体
+- 回收站 `fs.trash.interval = 0` 默认关闭，其他值表示设置文件的存活时间，默认检查回收站的间隔时间是 `fs.trash.checkpoint.interval`
+- 快照管理，对目录做备份
+    - `hdfs dfsadmin -allowSnapshot $dir` 开启指定目录的快照功能
+    - `hdfs dfsadmin -disallowSnapshot $dir` 关闭指定目录的快照功能
+    - `hdfs dfs -createSnapshot $dir [$name]` 创建指定名称的目录快照
+    - `hdfs dfs -renameSnapshot $dir $old_name $new_name `  重命名快照
+    - `hdfs lsSnapshottableDir` 列出当前目录所有可快照目录
+    - `hdfs snapshotDiff $dir1 $dir2` 比较两个快照目录
+    - `hdfs dfs -deleteSnapshot $dir $name` 删除快照
 
-  
 
+
+## 4. NameNode 和 SecondaryNameNode
+
+### 4.1 NN 和 2NN 的工作机制
+
+- HDFS 1.0
+  - 元数据储存在内存中
+  - 磁盘中备份了元数据 FsImage
+  - 引入 Edits 文件，只进行追加操作。当元数据更新或添加时记录
+  - 2NN 用于定期完成 FsImage 和 Edits 的合并
+- NN 的工作机制
+  - 加载编辑日志和镜像文件到内存
+  - 客户端进行元数据到增删改
+  - NN 记录操作日志，再更新滚动日志
+  - 进行内存数据的增删改
+- 2NN 的工作机制
+  - 请求 NN 是否需要 CheckPoint
+  - 请求执行 CheckPoint
+  - NN 滚动正在写的 Edits
+  - 拷贝 FsImage 和 Edits 到 2NN
+  - 合并，生成新的 FsImage 并拷贝到 NN
+
+### 4.2 FsImage 和 Edits
+
+- FsImage 和 Edits 在 `/data/tmp/dfs/name/current` 里
+
+- `hdfs oiv` 和 `hdfs oev` 用于查看文件
+
+  ```bash
+  $ hdfs oiv/oev -p XML -i $input_file -o $output_file.xml
+  ```
+
+### 4.3 CheckPoint 设置
+
+- 在 .xml 中有设置
+
+- 默认 3600s
+- 一分钟检查一次操作次数，达到 1000000 次立刻合并
+
+### 4.4 NameNode 故障处理
+
+- 将 2NN 数据拷贝到 NN 储存数据到目录
+  - 删除 `name` 文件夹
+  - 拷贝 `namesecondary` 文件夹到 `name` 文件夹
+
+- 使用 `-importCheckpoint` 选项启动 NN 守护进程，从而拷贝 2NN 到 NN
+  - 第一步与上个方法一样
+  - 如果 2NN 不和 NN 在一个主机节点上，拷贝 2NN 储存数据的目录到 NN 储存数据的评级目录并删除 in_use.lock
+  - `hdfs namenode -importCheckpoint`
+
+### 4.5 集群安全模式
+
+- NN 启动时首先将 FsImage 载入内存，并执行 Edits 中的各项操作
+- 在内存中建立文件系统元数据的映像之后，会创建一个新的 FsImage 文件和一个空的 Edits， 此时 NN 开始监听 DataNode 的请求
+- 以上两个过程中， NN 一直运行在安全模式中，即 NN 的文件系统对客户端是只读的
+- 系统中数据块的位置以块列表形式储存在 DataNode 中，在系统正常操作期间 NN 会在内存中保存所有块位置的映射信息
+- 在安全模式下， 各个 DataNode 会向 NN 发送最新的块列表信息
+- 如果满足最小副本条件：在整个文件系统中 99.9% 的块满足最小副本级别 （默认值是 `dfs.relication.min=1`），则 NN 在 30s 后退出安全模式
+- 集群处于安全模式下，不能执行重要操作（写操作）
+- 安全模式基本命令
+    - `hdfs dfsadmin -safemode get` 查看安全模式状态
+    - `hdfs dfsadmin -safemode enter` 进入安全模式
+    - `hdfs dfsadmin -safemode leave` 离开安全模式
+    - `hdfs dfsadmin -safemode wait` 等待安全模式状态
+
+
+
+## 5. DataNode
+
+### 5.1 DataNode 工作机制
+
+- DataNode 的 Block 中存放数据、数据长度、校验和、时间戳
+- DataNode 工作机制
+    - DN 启动后向 NN 注册
+    - NN 将 DN 注册成功写入元数据
+    - 每个一个周期（一个小时） DN 上报所有块信息
+    - 心跳（每三秒一次）返回，结果带有 NN 给该 DN 的命令
+    - 超过十分钟没有收到 DN 的心跳包，则认为该节点不可用
+
+### 5.2 数据完整性
+
+- 保证数据完整性的方法
+    - 当 DN 读取 Block 时，计算校验和
+    - 如果计算后的校验和与 Block 创建时不一样，说明 Block 已经损坏
+    - Client 读取其他 DN 上的 Block
+    - DN 在其文件创建后周期验证校验和
+
+### 5.3 掉线时限参数设置
+
+- 默认超时时长是 10min + 30s
+- 计算公式为 $TimeOut = 2*dfs.namenode.heartbeat.recheckinterval + 10*dfs.heartbeat.interval$
+- 配置在 hdfs-site.xml 文件中
+
+### 5.4 添加新DN
+
+- 修改 IP 地址和 Host 文件
+- 删除原来 HDFS 文件系统留存的文件 `hadoop-x.x.x/data` 和 `log`
+- 执行 `source /etc/profile`
+
+### 5.5 DN 退役旧数据节点
+
+- 不在白名单内的主机节点都会被退出
+    - 白名单在 NN 的 `hadoop-x.x.x/etc/hadoop/dfs.hosts`
+    - 在 hdfs-site.xml 配置文件中增加 dfs.hosts 属性
+    - 配置文件分发，刷新 NN
+    - 更新 ResourcesManager
+- 黑名单中的节点都会被踢出
+    - 黑名单在 `hadoop-x-x-x/etc/hadoop/dfs.hosts.exclude`
+    - 在黑名单中添加要退役节点的名称
+    - 在 hdfs-site.xml 配置文件中添加 dfs.hosts.exclude 属性
+    - 刷新 NN 和 RM
+- 黑名单和白名单中不能出现同一个主机名称
+
+
+
+## 6. MapReduce
+
+### 6.1 MapReduce 概述
+
+- MapReduce 是分布式运算程序的编程框架
+- MapReduce 优点
+    - 易于编程，实现一些接口即可完成一个分布式程序
+    - 良好的扩展性
+    - 高容错性，节点挂掉的时候计算任务可以自动转移
+    - 适合 `PB` 级别以上海量数据的离线处理
+- MapReduce 缺点
+    - 不擅长实时计算
+    - 不擅长流式计算
+    - 不擅长有向图计算
+
+### 6.2 MapReduce 核心思想
+
+> 以单词统计为例
+
+- MapReduce 程序分为 Map 阶段和 Reduce 阶段
+- Map 阶段分发数据，启动 MapTask （并发）
+    - 读取数据，并按行处理
+    - 按空格切分行内单词
+    - KV 键值对按单词首字母，分为两个分区写入磁盘
+- Reduce 阶段输入数据来源上个阶段的 MapTask输出
+    - 启动 ReduceTask 从 MapTask 拉取相应数据
+    - ReduceTask 输出各自数据
+- MapReduce 模型只能包含一个 Map 阶段和一个 Reduce 阶段
+
+### 6.3 MapReduce 进程
+
+- 一个完整的 MapReduce 程序在分布式运行时有三类实例进程
+    - MrAppMaster 负责整个程序的过程调度及状态协调
+    - MapTask 负责 Map 阶段的整个数据处理流程
+    - ReduceTask 负责 Reduce 阶段的整个数据处理流程
+
+### 6.4 MapReduce 编程
+
+- 常见类型的封装
+
+    | Java 类型 | Hadoop Writable 类型 |
+    | --------- | -------------------- |
+    | boolean   | BooleanWritable      |
+    | byte      | ByteWritable         |
+    | int       | IntWritable          |
+    | float     | FloatWritable        |
+    | double    | DoubleWritable       |
+    | String    | Text                 |
+    | map       | MapWritable          |
+    | array     | ArrayWritable        |
+
+- Mapper 阶段
+    - 用户自定义的 Mapper 要继承父类
+    - Mapper 的输入数据必须是键值对，但是键值的类型可以自己定义
+    - Mapper 中的业务逻辑写在 `map()` 方法中
+    - Mapper 的输出数据必须是键值对，但是键值的类型可以自己定义
+    - `map()` 方法（ MapTask 进程）对每个键值对调用一次
+- Reduce 阶段
+    - 用户自定义的 Reducer 要继承父类
+    - Reducer 的输入数据对应 Mapper 的输出数据类型
+    - Reducer 的业务逻辑写在 `reduce()` 方法中
+    - ReduceTask 进程对每一组**键相同**的键值对调用一次 `reduce()` 方法
+- Driver 阶段
   
+    - 提交程序到 YARN 集群，提交的是封装了 MapReduce 程序相关运行参数的 `job` 对象
+- Mapper `run()` 方法
+
+```Java
+public void run(Context context) throws IOExceptation, InterruptedExceptation
+{
+    setup(context);
+    try
+    {
+        while(context.nextKeyValue())
+        {
+            map(context.getCurrentKey(), context.getCurrentValue(), context);
+        }
+    }
+    finally
+    {
+        cleanup(context);
+    }
+}
+```
+
+- Reducer `run()` 方法
+
+```Java
+public void run(Context context) throws IOExceptation, InterruptedExceptation
+{
+    setup(context);
+    try
+    {
+        while(context.nextKey())
+        {
+            reduce(context.getCurrentKey, context.getValues(), context);
+            Iterator<VALUEIN> iter = context.getValues().iterator();
+            if(iter instanceof ReduceContext.ValueIterator)
+            {
+                ((ReduceContext.ValueIterator<VALUEIN>)iter).resetBackupStore();
+            }
+        }
+    }
+    finally
+    {
+        cleanup(context);
+    }
+}
+```
+
+- Driver 类内容
+    - 获取 Job 对象
+    - 设置 .jar 储存位置
+    - 关联 Map 类和 Reduce 类
+    - 设置 Mapper 阶段输出数据的 Key 和 Value 类型
+    - 设置最终数据输出的 Key 和 Value 类型
+    - 设置输入路径和输出路径
+    - 提交 Job
+
+
+
+## 7. Hadoop 序列化
+
+### 7.1 序列化概述
+
+- 序列化就是把内存中的对象转换成字节序列或其他数据传输协议，以便于储存到磁盘和网络传输
+- 反序列化就是将收到的字节序列或其他数据传输协议转换成内存中的对象
+- Java 的序列化自带很多额外信息，不便在网络中传输，因此 Hadoop开发了自己的序列化机制 Writable
+- Hadoop 序列化特点
+    - 紧凑：高效使用储存空间
+    - 快速：数据读写额外开销小
+    - 可扩展：随着通信协议的升级而升级
+    - 互操作：支持多语言的交互
+
+### 7.2 Hadoop 序列化实现
+
+- 序列化对象必须实现 Writable 接口
+- 反序列化时，需要反射调用空参构造函数，所以必须有空参构造
+- 重写序列化方法 `write()` 和反序列化方法 `readFields()`
+
+> 以下是一个示例
+
+```java
+@Override
+public void write(DataOutput out) throws IOExceptation
+{
+    out.writeLong(upFlow);
+    out.writeLong(downFlow);
+    out.writeLong(sumFlow);
+}
+
+@Override
+public void readFields(DataInput in) throws IOExceptation
+{
+    upFlow = in.readLong();
+    downFlow = in.readLong();
+    sumFlow = in.readLong();
+}
+```
+
+- 反序列化的顺序必须和序列化的顺序**完全一致**
+- 如果要将结果显示在文件中，需要重写 `toString()` 方法
+- 如果自定义反序列化的对象要在 Key 中进行传输，则还需要实现 Comparable 接口
+
+
+
+
+
+- 下一节：[MapReduce 框架原理](./HadoopNote_02.md)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
