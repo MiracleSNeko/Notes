@@ -780,8 +780,7 @@ public void readFields(DataInput in) throws IOExceptation
 
 
 
-
-
+##
 - 下一节：[MapReduce 框架原理](./HadoopNote_02.md)
 
 
