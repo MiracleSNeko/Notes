@@ -798,6 +798,62 @@ func backtrack(root *TreeNode, path *[]int, ret *[][]int, target int) {
 }
 ```
 
+## LC797 所有可能的路径
+
+![](./imgs/lc797q.png)
+
+```c++
+template <typename HOFunctor>
+class YCombinator
+{
+    HOFunctor func;
+
+public:
+    template <typename Function>
+    YCombinator(Function &&func) : func((Function &&) func) {}
+
+    template <typename... Args>
+    auto operator()(Args &&...args) -> decltype(func(*this, (Args &&) args...))
+    {
+        return func(*this, (Args &&) args...);
+    }
+};
+
+// template <typename Functor>
+// YCombinator(Functor) -> YCombinator<Functor>;
+
+template <typename Function>
+YCombinator<Function> make_YCombinator(Function &&func) { return YCombinator<Function>(func); }
+
+class Solution
+{
+public:
+    std::vector<std::vector<int>> allPathsSourceTarget(std::vector<std::vector<int>> &graph)
+    {
+        std::vector<std::vector<int>> ans;
+        std::vector<int> path({0});
+
+        auto dfs = make_YCombinator(
+            [&](auto &&self, int x) -> void
+            {
+                if (x == n)
+                {
+                    ans.push_back(path);
+                    return;
+                }
+                for (auto &y : graph[x])
+                {
+                    path.push_back(y);
+                    self(y);
+                    path.pop_back();
+                }
+            });
+        dfs(0);
+        return ans;
+    }
+};
+```
+
 # 2. 图
 
  ## 2.1 常用图算法与数据结构概述
@@ -1968,6 +2024,45 @@ func subarraysDivByK(nums []int, k int) int {
 		ret += (v - 1) * v / 2
 	}
 	return ret
+}
+```
+
+## LC1838 最高频元素的频次
+
+![](./imgs/lc1838q.png)
+
+![](./imgs/lc1838a1.png)
+
+```go
+func maxFrequency(nums []int, k int) int {
+	sum := []int{0}
+	sort.Ints(nums)
+	for i := 1; i <= len(nums); i++ {
+		sum = append(sum, sum[i-1]+nums[i-1])
+	}
+
+	checker := func(sum []int, n int, k int) bool {
+		for l := 0; l+n-1 < len(sum)-1; l++ {
+			r := l + n - 1
+			cur := sum[r+1] - sum[l]
+			t := nums[r] * n
+			if t-cur <= k {
+				return true
+			}
+		}
+		return false
+	}
+
+	l, r := 0, len(nums)
+	for l < r {
+		m := (l + r + 1) >> 1
+		if checker(sum, m, k) {
+			l = m
+		} else {
+			r = m - 1
+		}
+	}
+	return r
 }
 ```
 
