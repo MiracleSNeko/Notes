@@ -2066,3 +2066,108 @@ func maxFrequency(nums []int, k int) int {
 }
 ```
 
+## LC1744 吃糖问题
+
+![](./imgs/lc1744q.png)
+
+>   前缀和问题，求在第 t 类之前有多少糖，然后按最快速度和最慢速度分别吃即可。
+
+```c++
+class Solution
+{
+public:
+    std::vector<bool> canEat(std::vector<int> &candiesCount, std::vector<std::vector<int>> &queries)
+    {
+        size_t len = candiesCount.size();
+        size_t qlen = queries.size();
+        std::vector<int64_t> sum(len + 1, 0);
+        std::vector<bool> ans;
+        for (size_t i = 1; i <= len; ++i)
+        {
+            sum[i] = sum[i - 1] + candiesCount[i - 1];
+        }
+        for (size_t i = 0; i < qlen; ++i)
+        {
+            auto& q = queries[i];
+            // d+1是因为sum数组有前导0
+            int64_t t = q[0], d = q[1] + 1, c = q[2];
+            int64_t l = (sum[t]/c) + 1, r = sum[t+1];
+            ans.push_back(l <= d && d <= r);
+        }
+        return ans;
+    }
+};
+```
+
+## LC_MS17.24 最大子矩阵
+
+![](./imgs/lc_ms17_24q.png)
+
+>   遍历列的上下边界，按列求和得到数组d，寻找d的最大子序列和即可
+
+```go
+func getMaxMatrix(matrix [][]int) (ans []int) {
+	n, m := len(matrix), len(matrix[0])
+	sum := []int{}
+	maxsum := -(1 << 31)
+	// r1, c1, r2, c2
+	ans = make([]int, 4)
+	// r, c
+	cur := make([]int, 2)
+	for i := 0; i < n; i++ {
+		sum = make([]int, m)
+		for j := i; j < n; j++ {
+			dpsum := 0
+			for k := 0; k < m; k++ {
+				sum[k] += matrix[j][k]
+				// 最大子序和只用判断前面的和是不是负数，是就从这里重新开始
+				if dpsum > 0 {
+					dpsum += sum[k]
+				} else {
+					dpsum = sum[k]
+					cur[0], cur[1] = i, k
+				}
+				if dpsum > maxsum {
+					maxsum = dpsum
+					ans[2], ans[3] = j, k
+					ans[0], ans[1] = cur[0], cur[1]
+				}
+			}
+		}
+	}
+	return
+}
+```
+
+## LC238 除自身以外数组的乘积
+
+![](./imgs/lc238q.png)
+
+>   前缀积（大雾
+
+![](./imgs/lc238a1.png)
+
+```c++
+class Solution
+{
+public:
+    std::vector<int> productExceptSelf(std::vector<int> &nums)
+    {
+        size_t len = nums.size();
+        std::vector<int> leftmul(len, 1);
+        for (size_t i = 1; i < len; ++i)
+        {
+            leftmul[i] = leftmul[i-1] * nums[i-1];
+        }
+        int rightmul = 1;
+        for (int i = len - 1; i >= 1; --i)
+        {
+            leftmul[i] *= rightmul;
+            rightmul *= nums[i];
+        }
+        leftmul[0] = rightmul;
+        return leftmul;
+    }
+};
+```
+

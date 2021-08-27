@@ -34,6 +34,133 @@ void up(int k)
 }
 ```
 
+![](./images/noip/lc295q.png)
+
+```go
+// Go 手动实现堆，有 bug
+const MAX_LEN int = 110000
+
+type ArrayHeap struct {
+	Data [MAX_LEN]int
+	Cmp  func(ah *ArrayHeap, i, j int) bool
+	Init int
+}
+
+func (ah *ArrayHeap) Down(k int) {
+	if k > (*ah).Data[0] {
+		return
+	}
+	l, r := 2*k, 2*k+1
+	if (*ah).Cmp(ah, l, k) || (*ah).Cmp(ah, r, k) {
+		if (*ah).Cmp(ah, l, k) {
+			(*ah).Data[k], (*ah).Data[l] = (*ah).Data[l], (*ah).Data[k]
+			ah.Down(l)
+		} else {
+			(*ah).Data[k], (*ah).Data[r] = (*ah).Data[r], (*ah).Data[k]
+			ah.Down(r)
+		}
+	}
+}
+
+func (ah *ArrayHeap) Up(k int) {
+	for k > 1 && (*ah).Cmp(ah, k, k>>1) {
+		(*ah).Data[k], (*ah).Data[k>>1] = (*ah).Data[k>>1], (*ah).Data[k]
+		ah.Up(k >> 1)
+	}
+}
+
+func (ah *ArrayHeap) Add(val int) bool {
+	if (*ah).Data[0]+1 == MAX_LEN {
+		return false
+	} else {
+		(*ah).Data[0]++
+		(*ah).Data[(*ah).Data[0]] = val
+		(*ah).Up((*ah).Data[0])
+		return true
+	}
+}
+
+func (ah ArrayHeap) Len() int {
+	return ah.Data[0]
+}
+
+func (ah ArrayHeap) Top() int {
+	return ah.Data[1]
+}
+
+func (ah *ArrayHeap) Pop() {
+	l := (*ah).Data[0]
+	(*ah).Data[1], (*ah).Data[l] = (*ah).Data[l], (*ah).Init
+	(*ah).Data[0]--
+	(*ah).Down(1)
+}
+
+func (ah *ArrayHeap) Peek() int {
+	ret := (*ah).Data[1]
+	(*ah).Pop()
+	return ret
+}
+
+func NewHeap(cmp func(ah *ArrayHeap, i, j int) bool, init int) ArrayHeap {
+	data := [MAX_LEN]int{0}
+	for i := 1; i < MAX_LEN; i++ {
+		data[i] = init
+	}
+	return ArrayHeap{
+		data,
+		cmp,
+		init,
+	}
+}
+
+type MedianFinder struct {
+	MaxHalf ArrayHeap
+	MinHalf ArrayHeap
+}
+
+func minCmp(ah *ArrayHeap, i, j int) bool {
+	return (*ah).Data[i] < (*ah).Data[j]
+}
+
+func maxCmp(ah *ArrayHeap, i, j int) bool {
+	return (*ah).Data[i] > (*ah).Data[j]
+}
+
+/** initialize your data structure here. */
+func Constructor() MedianFinder {
+	return MedianFinder{
+		NewHeap(minCmp, math.MaxInt32),
+		NewHeap(maxCmp, math.MinInt32),
+	}
+}
+
+func (this *MedianFinder) AddNum(num int) {
+	if this.MinHalf.Len() == 0 || num < this.MinHalf.Top() {
+		this.MinHalf.Add(num)
+		if this.MinHalf.Len() > this.MaxHalf.Len()+1 {
+			tmp := this.MinHalf.Peek()
+			this.MaxHalf.Add(tmp)
+		}
+	} else {
+		this.MaxHalf.Add(num)
+		if this.MaxHalf.Len() > this.MinHalf.Len() {
+			tmp := this.MaxHalf.Peek()
+			this.MinHalf.Add(tmp)
+		}
+	}
+}
+
+func (this *MedianFinder) FindMedian() float64 {
+	if this.MaxHalf.Len() == this.MinHalf.Len() {
+		return float64(this.MaxHalf.Top()+this.MinHalf.Top()) / 2.0
+	} else {
+		return float64(this.MinHalf.Top())
+	}
+}
+```
+
+
+
 ### 左偏树
 
 定义一个树的斜深度为从根节点开始一直向右走到叶子节点的步数。左偏树是特殊的堆，满足左儿子大小不小于右儿子，关键操作：合并
