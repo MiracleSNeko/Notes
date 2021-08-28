@@ -37,22 +37,22 @@ void up(int k)
 ![](./images/noip/lc295q.png)
 
 ```go
-// Go 手动实现堆，有 bug
 const MAX_LEN int = 110000
 
 type ArrayHeap struct {
 	Data [MAX_LEN]int
+	Len  int
 	Cmp  func(ah *ArrayHeap, i, j int) bool
 	Init int
 }
 
 func (ah *ArrayHeap) Down(k int) {
-	if k > (*ah).Data[0] {
+	if k > (*ah).Len {
 		return
 	}
 	l, r := 2*k, 2*k+1
 	if (*ah).Cmp(ah, l, k) || (*ah).Cmp(ah, r, k) {
-		if (*ah).Cmp(ah, l, k) {
+        if (*ah).Cmp(ah, l, r) {	// 一开始写成 (*ah).Cmp(ah, l, k) ，裂开
 			(*ah).Data[k], (*ah).Data[l] = (*ah).Data[l], (*ah).Data[k]
 			ah.Down(l)
 		} else {
@@ -70,18 +70,14 @@ func (ah *ArrayHeap) Up(k int) {
 }
 
 func (ah *ArrayHeap) Add(val int) bool {
-	if (*ah).Data[0]+1 == MAX_LEN {
+	if (*ah).Len+1 == MAX_LEN {
 		return false
 	} else {
-		(*ah).Data[0]++
-		(*ah).Data[(*ah).Data[0]] = val
-		(*ah).Up((*ah).Data[0])
+		(*ah).Len++
+		(*ah).Data[(*ah).Len] = val
+		(*ah).Up((*ah).Len)
 		return true
 	}
-}
-
-func (ah ArrayHeap) Len() int {
-	return ah.Data[0]
 }
 
 func (ah ArrayHeap) Top() int {
@@ -89,9 +85,9 @@ func (ah ArrayHeap) Top() int {
 }
 
 func (ah *ArrayHeap) Pop() {
-	l := (*ah).Data[0]
+	l := (*ah).Len
 	(*ah).Data[1], (*ah).Data[l] = (*ah).Data[l], (*ah).Init
-	(*ah).Data[0]--
+	(*ah).Len--
 	(*ah).Down(1)
 }
 
@@ -108,14 +104,10 @@ func NewHeap(cmp func(ah *ArrayHeap, i, j int) bool, init int) ArrayHeap {
 	}
 	return ArrayHeap{
 		data,
+		0,
 		cmp,
 		init,
 	}
-}
-
-type MedianFinder struct {
-	MaxHalf ArrayHeap
-	MinHalf ArrayHeap
 }
 
 func minCmp(ah *ArrayHeap, i, j int) bool {
@@ -124,38 +116,6 @@ func minCmp(ah *ArrayHeap, i, j int) bool {
 
 func maxCmp(ah *ArrayHeap, i, j int) bool {
 	return (*ah).Data[i] > (*ah).Data[j]
-}
-
-/** initialize your data structure here. */
-func Constructor() MedianFinder {
-	return MedianFinder{
-		NewHeap(minCmp, math.MaxInt32),
-		NewHeap(maxCmp, math.MinInt32),
-	}
-}
-
-func (this *MedianFinder) AddNum(num int) {
-	if this.MinHalf.Len() == 0 || num < this.MinHalf.Top() {
-		this.MinHalf.Add(num)
-		if this.MinHalf.Len() > this.MaxHalf.Len()+1 {
-			tmp := this.MinHalf.Peek()
-			this.MaxHalf.Add(tmp)
-		}
-	} else {
-		this.MaxHalf.Add(num)
-		if this.MaxHalf.Len() > this.MinHalf.Len() {
-			tmp := this.MaxHalf.Peek()
-			this.MinHalf.Add(tmp)
-		}
-	}
-}
-
-func (this *MedianFinder) FindMedian() float64 {
-	if this.MaxHalf.Len() == this.MinHalf.Len() {
-		return float64(this.MaxHalf.Top()+this.MinHalf.Top()) / 2.0
-	} else {
-		return float64(this.MinHalf.Top())
-	}
 }
 ```
 
@@ -187,5 +147,25 @@ int merge(int k1, int k2)
 
 // 插入变成和一个单节点左偏树合并
 // 弹顶变成合并根的左右儿子
+```
+
+## 2. 算法
+
+### 2.1 带余快速幂
+
+```go
+const MOD := 1e9 + 7
+
+func fastPowWithMod(x, n int64) (ret int64) {
+	ret = 1
+	for n > 0 {
+		if n&1 == 1 {
+			ret = (ret * x) % MOD
+		}
+		x = (x * x) % MOD
+		n /= 2
+	}
+	return
+}
 ```
 

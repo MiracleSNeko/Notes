@@ -2099,7 +2099,7 @@ public:
 };
 ```
 
-## LC_MS17.24 最大子矩阵
+## LCMS17.24 最大子矩阵
 
 ![](./imgs/lc_ms17_24q.png)
 
@@ -2170,4 +2170,46 @@ public:
     }
 };
 ```
+
+## LC1074 元素和为目标值的子矩阵数量
+
+![](./imgs/lc1074q.png)
+
+>   依旧是遍历列的上下边界子矩阵前缀和
+
+```go
+func subarraySum(nums []int, target int) (ans int) {
+	mp := map[int]int{}
+	mp[0] = 1
+	prv := 0
+	for _, num := range nums {
+		prv += num
+		if _, ok := mp[prv-target]; ok {
+			ans += mp[prv-target]
+		}
+		mp[prv]++
+	}
+	return
+}
+
+func numSubmatrixSumTarget(matrix [][]int, target int) (ans int) {
+	m, n := len(matrix), len(matrix[0])
+	for i := 0; i < m; i++ {
+		sum := make([]int, n)
+		for j := i; j < m; j++ {
+			for c := 0; c < n; c++ {
+				sum[c] += matrix[j][c]
+			}
+			ans += subarraySum(sum, target)
+		}
+	}
+	return
+}
+```
+
+## LC862 和至少为 K 的最短子数组
+
+![](./imgs/lc862q.png)
+
+![](./imgs/lc862a1.png)
 
