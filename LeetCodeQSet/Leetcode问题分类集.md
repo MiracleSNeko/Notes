@@ -2213,3 +2213,125 @@ func numSubmatrixSumTarget(matrix [][]int, target int) (ans int) {
 
 ![](./imgs/lc862a1.png)
 
+>   -   为什么要用单调队列？
+>
+>       因为是求区间最短，可以很显然可以想到滑动窗，但是这个数组并不满足单调性：数组中存在负数，导致窗口值不单调，但是因为有负数所以才会导致当我们找到某个窗口和蔚K，窗内依然可能存在可行解，原因如下：
+>       对于j前面满足≥K的所有i，如果$i_1 < i_2, arr[i_1] > arr[i_2]$,那么可行解一定是i2，因为$i_2$更大且$arr[i_2]$更小
+>       所以我们可以维护一个单调队列保证窗口内值的单调性：
+>       思路：基于最近我们总是希望对于每个右指针j，左指针能够尽可能的靠近，并且值尽可能地大，如果有一个i-1的值>i处的值，那么i-1处的值就一定不是正确解，因为i处的值更近并且能够得到的数组和更大，如果i-1满足i一定满足，以此来减少我们的判断量
+>       如果队首的值满足当前值-队首值>=K,记录长度并弹出队首
+>       如果当前值<队列尾，那么弹出队尾保持队列单调
+>
+>       作者：ppppjcute
+>       链接：https://leetcode-cn.com/problems/shortest-subarray-with-sum-at-least-k/solution/java-qian-zhui-he-yu-shuang-duan-by-ppppjqute/
+>       来源：力扣（LeetCode）
+>       著作权归作者所有。商业转载请联系作者获得授权，非商业转载请注明出处。
+
+```java
+class Solution {
+    public int shortestSubarray(int[] A, int K) {
+        long [] arr = new long [A.length+1];
+        for(int i=0;i<A.length;i++){
+            arr[i+1] = arr[i]+A[i];
+            if(A[i]>=K) return 1;
+        }//得到前缀和数组
+        int res = Integer.MAX_VALUE;
+        // for(int i=0;i<=A.length-1;i++){  //暴力破解 N^2 超时
+        //     for(int j = i+1;j<=A.length;j++){
+        //         if(arr[j]-arr[i]>=K){
+        //             res = Math.min(j-i,res);
+        //         }
+        //     }
+        // }
+        Deque<Integer> queue = new ArrayDeque<>();
+        for(int i=0;i<arr.length;i++){
+            while(!queue.isEmpty()&&arr[i]<=arr[queue.getLast()])   queue.removeLast();
+            while(!queue.isEmpty()&&arr[i]-arr[queue.peek()]>=K)    res = Math.min(res,i-queue.poll());
+            queue.add(i);
+        }
+        return res==Integer.MAX_VALUE?-1:res;
+    }
+}
+
+作者：ppppjcute
+链接：https://leetcode-cn.com/problems/shortest-subarray-with-sum-at-least-k/solution/java-qian-zhui-he-yu-shuang-duan-by-ppppjqute/
+来源：力扣（LeetCode）
+著作权归作者所有。商业转载请联系作者获得授权，非商业转载请注明出处。
+```
+
+# 5. 动态规划
+
+## 5.1 状态压缩：以 TSP 问题为例
+
+例子：旅行商问题。从一个城市出发，选择要走的路径，要求每个城市只能到达一次，而且最后要回到原来出发的城市，目标是选择最短路径。 TSP 问题是 NPC 问题，状态压缩 dp 可以做到 $O(n^2*2^n)$ 的复杂度。
+
+![](./imgs/yasuodp1.png)
+
+将状态用掩码的形式储存： `path = [1, 3, 4] => path = 0x00001101`
+
+用 $dp[i][S]$ 表示当前在 $i$ 节点，已访问的节点集合为 $S$， 所经过的路径的最小权值和。状态转移方程：
+
+$dp[j][S | (1 << j)] = \min (dp[i][S] + W[i][j])$
+
+$S | (1 << j)$ 将第 $j$ 个二进制位置为 1， 即在当前访问路径里加上 j 。起始点可以是任意节点，所以初始条件是 $dp[i][1 << i] = 0$。
+
+设置循环时，保证 $S | (1 << j)$ 在 $S$ 之后出现即可。显然，往 $S$ 添加二进制 1 会让 S 增大。所以循环条件是
+
+```c++
+for (int S = 0; S < (1 << n);; ++S) {}
+```
+
+所以完整的核心代码为
+
+```c++
+for (int s = 0; s < (1 << n); ++s)
+	for (int i = 0; i < n; ++i) if (s & (1 << i))
+        for (int j = 0; j < n; ++j) if (!(s & (1 << j)) && INFTY != W[i][j])
+            dp[j][s | (1 << i)] = min(dp[j][s | (1 << i)], dp[i][s] + W[i][j]);
+```
+
+## LC5856 完成任务的最少工作时间段
+
+![](./imgs/lc5856q.png)
+
+>   注意：这不是个贪心的题！贪心需要局部最优和全局情况无关，但是这个是有关的！
+
+![](./imgs/lc5856a1.png)
+
+![](./imgs/lc5856a2.png)
+
+![](./imgs/lc5856a3.png)
+
+![](./imgs/lc5856a4.png)
+
+```rust
+// 和思路略有不同的状态压缩，有bug
+impl Solution {
+    pub fn min_sessions(tasks: Vec<i32>, session_time: i32) -> i32 {
+        // 1 <= n <= 14
+        let n = tasks.len();
+        const INF: i32 = 15;
+        let m = (1 << n) as usize;
+        let mut dp = vec![INF; m]; // 记录到达状态 status 时需要用的最少时间
+        
+        
+        dp[0] = 0;
+        // 枚举所有状态
+        for status in 1..m {
+            for i in 0..n {
+                if status & (1 << i) != 0 {
+                    let t = dp[status ^ (1 << i)]; // 去除掉当前任务的用时
+                    let cur = t % session_time;    // 去掉已经成组的后，额外多出的时间
+                    if cur + tasks[i] <= session_time { // 不用额外再开一组
+                        dp[status] = dp[status].min(t + tasks[i]);
+                    } else { // 需要重开一组
+                        dp[status] = dp[status].min(t + tasks[i] + session_time - cur); // 之前的对齐到 session_time，因为一个任务不能跨两个组完成
+                    }
+                }
+            }
+        }
+        (dp[m-1] + session_time - 1) / session_time
+    }
+}
+```
+
