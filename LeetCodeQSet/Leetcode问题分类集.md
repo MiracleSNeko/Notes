@@ -2306,6 +2306,8 @@ for (int s = 0; s < (1 << n); ++s)
 
 ```rust
 // 和思路略有不同的状态压缩，有bug
+// bug 应该出在 INF 的设置上，之前的 15 是题解思路的 INF，枚举时间很容易就超过了
+// 应该改成 i32::MAX >> 1 就能过了，没验证
 impl Solution {
     pub fn min_sessions(tasks: Vec<i32>, session_time: i32) -> i32 {
         // 1 <= n <= 14
@@ -2313,7 +2315,6 @@ impl Solution {
         const INF: i32 = 15;
         let m = (1 << n) as usize;
         let mut dp = vec![INF; m]; // 记录到达状态 status 时需要用的最少时间
-        
         
         dp[0] = 0;
         // 枚举所有状态
@@ -2333,5 +2334,117 @@ impl Solution {
         (dp[m-1] + session_time - 1) / session_time
     }
 }
+```
+
+## LC1723 完成所有工作所需要的最小时间
+
+![](./imgs/lc1723q.png)
+
+### 1. 状态压缩 + 二分
+
+![](./imgs/lc1723a1.png)
+
+>   此法较易理解，单调性和二分的左右界都是显然的
+
+```c++
+class Solution
+{
+public:
+    int minimumTimeRequired(std::vector<int> &jobs, int k)
+    {
+        int lb = *std::max_element(jobs.begin(), jobs.end());
+        int rb = std::accumulate(jobs.begin(), jobs.end(), 0);
+        int n = jobs.size();
+        std::vector<int> tot(1 << n, 0);
+        for (int s = 1; s < (1 << n); ++s)
+        {
+            for (int i = 0; i < n; ++i)
+            {
+                // 状态 s 不含元素 i
+                if ((s & (1 << i)) == 0)
+                {
+                    continue;
+                }
+                tot[s] = tot[s ^ (1 << i)] + jobs[i];
+                break;
+            }
+        }
+        while (rb > lb)
+        {
+            int md = (rb + lb) >> 1;
+            std::vector<int> dp(1 << n, INT_MAX >> 1);
+            dp[0] = 0;
+            for (int s = 0; s < (1 << n); ++s)
+            {
+                // i = (i - 1) & s 可以不重复遍历所有状态吗？肯定是可以遍历完的，但是没重复怎么证明？
+                for (int i = s; i; i = (i - 1) & s)
+                {
+                    if (tot[i] <= md)
+                    {
+                        dp[s] = std::min(dp[s], dp[s - i] + 1);
+                    }
+                }
+            }
+            if (dp[(1 << n) - 1] <= k)
+            {
+                rb = md;
+            }
+            else
+            {
+                lb = md + 1;
+            }
+        }
+        return lb;
+    }
+};
+```
+
+### 2. 状态压缩 DP
+
+![](./imgs/lc1723a2.png)
+
+>   要背的板： 遍历全子集状态 `for (int subs = s; subs; subs = (subs - 1) & s)`
+
+```c++
+class Solution
+{
+public:
+    int minimumTimeRequired(std::vector<int> &jobs, int k)
+    {
+        int n = jobs.size();
+        int ss = 1 << n; // 全状态
+        std::vector<std::vector<int>> dp(k, std::vector<int>(ss, -1));
+        std::vector<int> tot(ss, 0);
+        for (int s = 1; s < ss; ++s)
+        {
+            for (int i = 0; i < n; ++i)
+            {
+                if ((s & (1 << i)) == 0)
+                {
+                    continue;
+                }
+                tot[s] = tot[s ^ (1 << i)] + jobs[i];
+                break;
+            }
+        }
+        for (int s = 0; s < ss; ++s)
+        {
+            dp[0][s] = tot[s];
+        }
+        for (int i = 1; i < k; ++i)
+        {
+            for (int s = 0; s < ss; ++s)
+            {
+                int mn = INT_MAX;
+                for (int j = s; j; j = (j-1) & s)
+                {
+                    mn = std::min(mn, std::max(dp[i-1][s ^ j], tot[j]));
+                }
+                dp[i][s] = mn;
+            }
+        }
+        return dp[k-1][ss-1];
+    }
+};
 ```
 
