@@ -2448,3 +2448,54 @@ public:
 };
 ```
 
+## LC689 划分为 k 个相等的子集
+
+![](./imgs/lc689q.png)
+
+>   排序 dp，看添加之后是否能保证和小于等于 sum(num) / k ，不然肯定为 False
+
+![](./imgs/lc689a1.png)
+
+```c++
+class Solution
+{
+public:
+    bool canPartitionKSubsets(std::vector<int> &nums, int k)
+    {
+        int n = nums.size();
+        int ss = 1 << n;
+        int sum = std::accumulate(nums.begin(), nums.end(), 0);
+        if (sum % k != 0)
+            return false;
+        int t = sum / k;
+        std::sort(nums.begin(), nums.end());
+        if (nums.back() > t)
+            return false;
+        std::vector<uint8_t> dp(ss, 0);
+        dp[0] = 1;
+        std::vector<int> csum(ss, 0);
+        for (int s = 0; s < ss; ++s)
+        {
+            if (!dp[s]) // 不可能往下走了，剪枝
+                continue;
+            for (int i = 0; i < n; ++i)
+            {
+                if (((s | (1 << i)) == s)) // 考虑过了
+                    continue;
+                int nxts = s | (1 << i);
+                if (csum[s] % t + nums[i] <= t)
+                {
+                    csum[nxts] = csum[s] + nums[i];
+                    dp[nxts] = 1;
+                }
+                else
+                {
+                    break;
+                }
+            }
+        }
+        return dp[ss-1] == 1;
+    }
+};
+```
+
