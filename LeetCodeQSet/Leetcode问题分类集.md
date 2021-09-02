@@ -2307,12 +2307,13 @@ for (int s = 0; s < (1 << n); ++s)
 ```rust
 // 和思路略有不同的状态压缩，有bug
 // bug 应该出在 INF 的设置上，之前的 15 是题解思路的 INF，枚举时间很容易就超过了
-// 应该改成 i32::MAX >> 1 就能过了，没验证
+// 改成 i32::MAX >> 1 就能过了
 impl Solution {
     pub fn min_sessions(tasks: Vec<i32>, session_time: i32) -> i32 {
         // 1 <= n <= 14
         let n = tasks.len();
-        const INF: i32 = 15;
+        // const INF: i32 = 15;
+        const INF: i32 = i32::MAX >> 1;
         let m = (1 << n) as usize;
         let mut dp = vec![INF; m]; // 记录到达状态 status 时需要用的最少时间
         
