@@ -2500,3 +2500,83 @@ public:
 };
 ```
 
+## LC526 优美排列
+
+![](./imgs/lc526q.png)
+
+![](./imgs/lc526a1.png)
+
+```c++
+using Matrix = std::vector<std::vector<int>>;
+
+inline Matrix makeMatrix(int m, int n, int init) { return std::vector<std::vector<int>>(m, std::vector<int>(n, init)); }
+
+class Solution
+{
+public:
+    int countArrangement(int n)
+    {
+        int ss = 1 << n;
+        Matrix dp = makeMatrix(n + 1, ss, 0);
+        dp[0][0] = 1;
+        for (int i = 1; i <= n; ++i)
+        {
+            for (int s = 0; s < ss; ++s)
+            {
+                for (int k = 1; k <= n; ++k)
+                {
+                    if ((s & (1 << (k - 1))) == 0)
+                        continue;
+                    if (k % i != 0 && i % k != 0)
+                        continue;
+                    dp[i][s] += dp[i - 1][s ^ (1 << (k - 1))];
+                }
+            }
+        }
+        return dp[n][ss-1];
+    }
+};
+```
+
+![](./imgs/lc526a2.png)
+
+```c++
+inline int lowbit(int x) { return x & (-x); }
+inline int count1(int x)
+{
+    int ans = 0;
+    while (x)
+    {
+        x -= lowbit(x);
+        ++ans;
+    }
+    return ans;
+}
+
+class Solution
+{
+public:
+    int countArrangement(int n)
+    {
+        int ss = 1 << n;
+        std::vector<int> dp(ss, 0);
+        dp[0] = 1;
+        for (int s = 1; s < ss; ++s)
+        {
+            int cnt = count1(s);
+            for (int i = 0; i < n; ++i)
+            {
+                if (!(s & (1 << i)))
+                    continue;
+                if ((i + 1) % cnt != 0 && cnt % (i + 1) != 0)
+                    continue;
+                dp[s] += dp[s ^ (1 << i)];
+            }
+        }
+        return dp[ss - 1];
+    }
+};
+```
+
+
+
