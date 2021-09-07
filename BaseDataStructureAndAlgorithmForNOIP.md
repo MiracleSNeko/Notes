@@ -159,7 +159,7 @@ int merge(int k1, int k2)
 void init()
 {
     for (int i = 1; i <= n; ++i) f[i][0] = a[i];
-    for (int j = 1; j <- 20; ++j)
+    for (int j = 1; j <= 20; ++j)
         for (int i = (1 << j); i <= n; ++i)
         	f[i][j] = min(f[i][j-1], f[i - (1 << (j-1))][j]);
 }
@@ -171,7 +171,7 @@ void init()
 int query(int l, int r)
 {
     int x = log(r- l + 1)/log2;
-    return min(f[r][x], f[l + (1 << x) ])
+    return min(f[r][x], f[l + (1 << x) ][x])
 }
 ```
 
@@ -197,3 +197,61 @@ func fastPowWithMod(x, n int64) (ret int64) {
 }
 ```
 
+### 2.2 树上LCA
+
+```c++
+// f[i][j] 表示 i 向上走 2^j 步到达的点
+void init()
+{
+    for (int i = 1; i <= n; ++i) f[i][0] = p[i];
+    for (int j = 1; j <= 20; ++j)
+        for (int i = 1; i <= n; ++i)
+            f[i][j] = f[f[i][j-1]][j-1];
+}
+int lca(int u, int v)
+{
+    // 第一步 u v 跳到同一层
+    if (dep[u] > dep[v]) swap(u, v);
+    for (int j = 20; j >= 0; --j) if (dep[f[v][j]] >= dep[u]) v = f[v][j];
+    if (u == v) return u;
+    // 第二步 从同一层往上跳。妙啊！
+    for (int j = 20; j >= 0; --j) if (f[u][j] != f[v][j]) u = f[u][j], v = f[v][j];
+	return f[u][0];
+}
+```
+
+树上 LCA 可以带一些信息
+
+```c++
+// f[i][j] 表示 i 向上走 2^j 步到达的点
+// g[i][j] 表示 i 向上走 2^j 步的信息和
+// merge 表示一个抽象操作，可以是 max min sum 等
+// 一边跳一边把信息累积进去
+void init()
+{
+    for (int i = 1; i <= n; ++i) f[i][0] = p[i];
+    for (int j = 1; j <= 20; ++j)
+        for (int i = 1; i <= n; ++i)
+            f[i][j] = f[f[i][j-1]][j-1], g[i][j] = merge(g[i][j-1],g[f[i][j-1]][j-1]);
+}
+Info lca(int u, int v)
+{
+    // 第一步 u v 跳到同一层
+    if (dep[u] > dep[v]) swap(u, v);
+    Info ret = 0;
+    for (int j = 20; j >= 0; --j) if (dep[f[v][j]] >= dep[u]) 
+        ret = merge(ret, g[v][j]), v = f[v][j];
+    if (u == v) 
+        ret = merge(ret, a[u]), return ret;
+    // 第二步 从同一层往上跳。妙啊！
+    for (int j = 20; j >= 0; --j) if (f[u][j] != f[v][j]) 
+        ret = merge(merge(ret, g[u][j]), g[v]][j]), u = f[u][j], v = f[v][j];
+   	ret = merge(merge(ret, g[u][0]), g[v][0]);
+    u = f[u][0], ret = merge(ret, a[u]);
+	return ret;
+}
+```
+
+一个例子：求 u -> v 的点权和，可以用 s[u] 表示 u 到根的点权和，那么 $s_{u,v} = s[u] + s[v] - 2*s[lca(u, v)] + w[lca(u, v)]$
+
+那么 s[u] 应该怎么维护? 

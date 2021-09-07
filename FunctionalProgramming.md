@@ -232,6 +232,34 @@ int main() {
 	std::cout << "fac(10) = " << fac(10) << std::endl;
 	return 0;
 }
+
+// C++ 11 可用
+#include <iostream>
+#include <functional>
+
+#define lambda(NAME, CAP, PROTO, BODY) \
+    [&]() { \
+        std::function<auto PROTO> (NAME) = CAP PROTO {BODY}; \
+        return (NAME); \
+    }()
+
+int main() {
+    auto fac = lambda(fac, [&], (int x) -> int, {
+        if (x < 1) {
+            return 1;
+        } else {
+            return x * fac(x - 1);
+        }
+    });
+
+    std::cout << fac(3) << std::endl;
+    return 0;
+}
+
+作者：匿名用户
+链接：https://www.zhihu.com/question/27441424/answer/37023724
+来源：知乎
+著作权归作者所有。商业转载请联系作者获得授权，非商业转载请注明出处。
 ```
 
 

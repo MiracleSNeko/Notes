@@ -2578,5 +2578,109 @@ public:
 };
 ```
 
+## 5.2 树形 DP
+
+树形 DP，即在树上进行的 DP。由于树固有的递归性质，树形 DP 一般都是递归进行的。
+
+问题：给你一棵树 要求用最少的代价（最大的收益）完成给定的操作
+
+树形DP 一般来说都是从叶子从而推出根 当然 从根推叶子的情况也有 不过很少
+
+一般实现方式: DFS(包括记忆化搜索)，递推等
+
+## LC124 二叉树中的最大路径和
+
+![](./imgs/lc124q.png)
+
+![](./imgs/lc124a1.png)
+
+计算得到每个节点的最大贡献值后，根节点选择左右孩子贡献最大的一个即可。
+
+```c++
+class Solution
+{
+public:
+    int ans = INT_MIN;
+
+    int maxPathSum(TreeNode *root)
+    {
+        int _ = getGain(root);
+        return this->ans;
+    }
+
+    int getGain(TreeNode *root)
+    {
+        if (!root) return 0;
+        int l = getGain(root->left);
+        int r = getGain(root->right);
+        l = (l > 0)? l: 0;
+        r = (r > 0)? r: 0;
+        ans = (ans < l + r + root->val)? l + r + root->val: ans;
+        return root->val + std::max(l, r);
+    }
+};
+```
+
+## LC834 树中距离之和
+
+![](./imgs/lc834q.png)
+
+![](./imgs/lc834a1.png)
+
+![](./imgs/lc834a2.png)
+
+![](./imgs/lc834a3.png)
+
+![](./imgs/lc834a4.png)
+
+```go
+// 思路是这个思路，但是爆栈了，埋个坑用 C++ lambda Y 组合子写
+func sumOfDistancesInTree(n int, edges [][]int) []int {
+	// 1. 建邻接表
+	graph := make([][]int, n)
+	for i := 0; i < n; i++ {
+		graph[i] = []int{}
+	}
+	for _, edge := range edges {
+		s, e := edge[0], edge[1]
+		graph[s] = append(graph[s], e)
+		graph[e] = append(graph[e], s)
+	}
+	// 2. 自底向上，计算所有以当前节点为根的子树节点的距离和
+	distSum := make([]int, n) 	// 和
+	nodeNum := make([]int, n)	// 子树节点个数，含自己
+	for i := 0; i < n; i++ {
+		nodeNum[i] = 1
+	}
+	var postOrder func(int, int)
+	postOrder = func(root, parent int) {
+		for _, conn := range edges[root] {
+			if conn == parent {
+				continue
+			}
+			postOrder(conn, root)
+			nodeNum[root] += nodeNum[conn]
+			distSum[root] += distSum[conn] + nodeNum[conn]
+		}
+	}
+	// 3. 从顶向下，计算子树之外的部分
+	// TODO: 递推公式要好好理解，这里是不求甚解抄上去的
+	var preOrder func(int, int)
+	preOrder = func(root, parent int) {
+		for _, conn := range edges[root] {
+			if conn == parent {
+				continue
+			}
+			distSum[conn] = distSum[root] + n - 2 * nodeNum[conn]
+			preOrder(conn, root)
+		}
+	}
+	// 4. 求解
+	postOrder(0, -1)
+	preOrder(0, -1)
+	return distSum
+}
+```
+
 
 
