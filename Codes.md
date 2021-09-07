@@ -3,7 +3,6 @@
 ## 1. LeetCode Cpp
 
 ```c++
-#include <bits/stdc++.h>
 #define IN_LC 1
 
 template <typename Functor>
@@ -50,6 +49,11 @@ inline namespace My
 #define TMP_T2 template <typename T1, typename T2>
 #define TMP_TV2(T) template <T v1, T v2>
 #define TUPLE(...) std::make_tuple(__VA_ARGS__)
+
+#define FORINC(i, st, ed) for (auto i = st; i < ed; ++i)
+#define FORINC_STP(i, st, ed, stp) for (auto i = st; i < ed; i += stp)
+#define FORDEC(i, st, ed) for (auto i = st; i > ed; --i)
+#define FORDEC_STP(i, st, ed, stp) for (auto i = st; i > ed; i -= stp)
 
 #define CHEATING_HEAD std::ios::sync_with_stdio(false)
 #define ALL(...) begin(__VA_ARGS__), end(__VA_ARGS__)
@@ -117,38 +121,6 @@ inline namespace My
     }
     namespace GraphAlgo
     {
-        decltype(auto) EdgesToAdjList(const VecVec<i32> &edges, const i32 n)
-        {
-            auto graph = VecVec<i32>(n, Vec<i32>());
-            for (auto &&e : edges)
-            {
-                auto st = e[0], ed = e[1];
-                graph[st].push_back(ed);
-                graph[ed].push_back(st);
-            }
-            return graph;
-        }
-    }
-    namespace WeightedGraphAlgo
-    {
-        TMP_T struct Vertex
-        {
-            i32 idx;
-            T weight;
-            Vertex(i32 idx, T w) : idx(idx), weight(w) {}
-        };
-        TMP_T decltype(auto) EdgesToAdjList(const VecVec<i32> &edges, const Vec<T> &weights)
-        {
-            auto n = weights.size();
-            auto graph = VecVec<Vertex<T>>(n, Vec<Vertex<T>>());
-            for (auto &&e : edges)
-            {
-                auto st = e[0], ed = e[1];
-                graph[st].push_back(Vertex(ed, weights[ed]));
-                graph[ed].push_back(Vertex(st, weights[st]));
-            }
-            return graph;
-        }
     }
     namespace String
     {
@@ -188,7 +160,7 @@ inline namespace My
         /**
          * @brief 马拉车算法，求最长回文字串
          */
-        const str &Manacher(const str &s)
+        str Manacher(const str &s)
         {
             str ma = "^#";
             for (auto c : s)
@@ -201,21 +173,149 @@ inline namespace My
             i32 l = ma.size();
             Vec<i32> mp(l, 0);
             i32 mx = 0, idx = 0, maxpos = 0;
-            for (auto i : RangeTo<l - 1>)
+            for (auto i = 0; i < l - 1; ++i)
             {
                 mp[i] = (mx > i) ? std::min(mp[(idx << 1) - i], mx - i) : 1;
                 while (i - mp[i] >= 0 && i + mp[i] < (i32)(ma.size()) && ma[i + mp[i]] == ma[i - mp[i]])
-                    ++mp[i] if (mp[i] > mp[maxpos])
-                        maxpos = i;
+                    ++mp[i];
+                if (mp[i] > mp[maxpos])
+                    maxpos = i;
                 if (i + mp[i] > mx)
                     mx = i + mp[i], idx = i;
             }
             str ret;
-            for (auto i : Range<maxpos - mp[maxpos] + 1, maxpos + mp[maxpos]>)
+            for (auto i = maxpos - mp[maxpos] + 1; i < maxpos + mp[maxpos]; ++i)
                 if (ISDIGIT(ma[i]))
                     ret += ma[i];
             return ret;
         }
+
+    }
+    namespace Mathematic
+    {
+        /**
+         * @brief gcd
+         */
+        i32 Gcd(i32 a, i32 b) { return b == 0 ? a : Gcd(b, a % b); }
+
+        /**
+         * @brief 快速幂
+         */
+        i64 FastPow(i64 x, const i64 n)
+        {
+            if (n == 0)
+                return 1;
+            i64 ret = 1;
+            while (n)
+            {
+                x *= x;
+                if (n & 1)
+                {
+                    ret *= x;
+                }
+            }
+            return ret;
+        }
+
+        /**
+         * @brief 带 mod 快速幂
+         */
+        i64 FastPow(i64 x, const i64 n, const i64 mod)
+        {
+            if (n == 0)
+                return 1 % mod;
+            i64 ret = 1;
+            while (n)
+            {
+                x = x * x % mod;
+                if (n & 1)
+                {
+                    ret = ret * x % mod;
+                }
+            }
+            return ret % mod;
+        }
+
+        /**
+         * @brief x 进制转 y 进制
+         */
+        str Transform(i32 x, i32 y, str valBaseX)
+        {
+            assert(x >= 2 && x <= 36 && y >= 2 && y <= 36);
+            str valBaseY;
+            i64 sum = 0;
+            for (auto c : valBaseX)
+            {
+                if (c == '-')
+                    continue;
+                if (ISDIGIT(c))
+                    sum = sum * x + (c - '0');
+                else
+                    sum = sum * x + (c - 'A' + 10);
+            }
+            while (sum)
+            {
+                i8 tmp = sum % y;
+                sum /= y;
+                if (tmp < 9)
+                    tmp += '0';
+                else
+                    tmp += 'A' - 10;
+                valBaseY += tmp;
+            }
+            if (valBaseY.empty())
+                valBaseY = "0";
+            if (*valBaseX.begin() == '-')
+                valBaseY = "-" + valBaseY;
+            return valBaseY;
+        }
+
+        /**
+         * @brief 埃拉托色尼筛，O(Nlog N)
+         */
+        TMP_TV(i64)
+        class Eratosthenes
+        {
+        public:
+            Eratosthenes() {}
+            // 返回前 n 个数中的素数
+            static Vec<i64> GetPrime(i64 n)
+            {
+                ans.fill(0), isPrime.fill(false), tot = 0;
+                CheckPrime(n);
+                return Vec<i64>(ans.begin(), ans.begin() + tot);
+            }
+
+        private:
+            static std::array<i64, v> ans;
+            static std::array<bool, v> isPrime;
+            static i64 tot;
+            // 检查前 n 个数中是素数的数目
+            static void CheckPrime(i64 n)
+            {
+                FORINC(i, 2, n + 1)
+                {
+                    isPrime[i] = true;
+                }
+                FORINC(i, 2, n + 1)
+                {
+                    if (isPrime[i])
+                    {
+                        if (n / i < i)
+                            break;
+                        FORINC_STP(j, i * i, n + 1, i)
+                        {
+                            isPrime[j] = false;
+                        }
+                        FORINC(i, 2, n + 1)
+                        {
+                            if (isPrime[i])
+                                ans[++tot] = i;
+                        }
+                    }
+                }
+            }
+        };
     }
 }
 
@@ -233,6 +333,7 @@ inline namespace LeetCodeDataStructure
     };
 }
 #endif
+
 ```
 
 
