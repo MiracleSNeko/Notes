@@ -3,8 +3,11 @@
 ## 1. LeetCode Cpp
 
 ```c++
+#include <bits/stdc++.h>
 #define IN_LC 1
+#define USE_YCOMBINATOR 2017
 
+#if USE_YCOMBINATOR >= 2014
 template <typename Functor>
 class YCombinator
 {
@@ -21,17 +24,18 @@ public:
 private:
     Functor func;
 };
+#endif
 
-#if __cplusplus >= 201703
+#if USE_YCOMBINATOR == 2017
 template <typename Fn>
 YCombinator(Fn) -> YCombinator<Fn>;
-#elif __cplusplus >= 201402
+#elif USE_YCOMBINATOR == 2014
 template <typename Functor>
 decltype(auto) MakeYCombinator(Functor func)
 {
     return YCombinator<Functor>(func);
 }
-#else
+#elif USE_YCOMBINATOR == 2011
 #define Lambda(NAME, CAP, PROTO, BODY)                     \
     [&]() {                                                \
         std::function<auto PROTO>(NAME) = CAP PROTO{BODY}; \
@@ -49,6 +53,7 @@ inline namespace My
 #define TMP_T2 template <typename T1, typename T2>
 #define TMP_TV2(T) template <T v1, T v2>
 #define TUPLE(...) std::make_tuple(__VA_ARGS__)
+#define PAIR(...) std::make_pair(__VA_ARGS__)
 
 #define FORINC(i, st, ed) for (auto i = st; i < ed; ++i)
 #define FORINC_STP(i, st, ed, stp) for (auto i = st; i < ed; i += stp)
@@ -86,13 +91,15 @@ inline namespace My
         using f32 = float_t;
         using f64 = double_t;
         using str = std::string;
+        TMP_TV(i64)
+        using BitSet = std::bitset<v>;
         TMP_T using Vec = std::vector<T>;
         TMP_T using Mat = std::vector<std::vector<T>>;
         TMP_T using VecVec = std::vector<std::vector<T>>;
         TMP_T using Heap = std::priority_queue<T>;
     }
 
-    // 2. Tools Template
+    // 2. Tools Template and Constant
     inline namespace
     {
         TMP_TV2(i32)
@@ -111,18 +118,133 @@ inline namespace My
                 ret[i] = i;
             return ret;
         }();
+
+        constexpr i32 Direction[4][2] = {{1, 0}, {0, -1}, {0, 1}, {-1, 0}};
+        constexpr i32 Mod = 1e9 + 7;
+        constexpr i32 Inf = 0x3f3f3f3f;
     }
 
     // 3. Functions
+    inline namespace // Generic
+    {
+        TMP_T2 const Vec<T2> PreSum(const Vec<T1> &vec)
+        {
+            T2 tmp = 0;
+            Vec<T2> ret({tmp});
+            for (auto &i : vec)
+            {
+                tmp += i;
+                ret.emplace_back(tmp);
+            }
+            return ret;
+        }
+
+        TMP_T const Vec<T> PreSum(const Vec<T> &vec)
+        {
+            return PreSum<T, T>(vec);
+        }
+
+        TMP_T2 const T2 Acc(const Vec<T1> &vec, T2 st = 0)
+        {
+            return std::accumulate(ALL(vec), st);
+        }
+
+        TMP_T const T Acc(const Vec<T> &vec, T st = 0)
+        {
+            return std::accumulate(ALL(vec), st);
+        }
+
+        // Wrapper of std::lower_bound for Vec<T> with default Cmp
+        TMP_T const size_t LowerBS(const Vec<T> &vec, const T &target)
+        {
+            return std::lower_bound(ALL(vec), target) - vec.begin();
+        }
+
+        // Wrapper of std::upper_bound for Vec<T> with default Cmp
+        TMP_T const size_t UpperBS(const Vec<T> &vec, const T &target)
+        {
+            return std::upper_bound(ALL(vec), target) - vec.begin();
+        }
+
+    }
     namespace LinearAlgebra
     {
-        TMP_T constexpr decltype(auto) NewMat(int n, int m) { return Mat<T>(n, Vec<T>(m)); }
+        TMP_T constexpr decltype(auto) NewMat(int n, int m, T init) { return Mat<T>(n, Vec<T>(m, init)); }
         TMP_T constexpr decltype(auto) MatSize(const Mat<T> &mat) { return TUPLE(mat.size(), mat[0].size()); }
     }
     namespace GraphAlgo
     {
+        /**
+         * @brief 链式前向星数据结构
+         */
+        TMP_T struct LFSEdge
+        {
+            i32 next, to;
+            T weight;
+        };
+        /**
+         * @brief 链式前向星存图，加 Dijkstra、SPFA 求最短路
+         */
+        template <typename T, i32 MaxSize>
+        class ListForwardStar
+        {
+        public:
+            ListForwardStar(i32 pointNum) : cntP(pointNum), cntE(0) { head.fill(-1); }
+
+            /**
+             * @brief 加边
+             */
+            void AddEdge(i32 u, i32 v, T w) noexcept
+            {
+                edge[cntE].to = v;         // 终点
+                edge[cntE].weight = w;     //.权值
+                edge[cntE].next = head[u]; // 以 u 为起点的最后一条边的编号
+                                          // 也就是与这个边起点相同的上一条边的编号
+                head[u] = cntE++;          // 更新以 u 为起点的上一条边的编号
+                                          // 也就是刚插入的这条边
+            }
+
+            /**
+             * @brief SPFA 求最短路。输入源点，返回从源点到各个点最小距离
+             */
+            Vec<T> SPFASolve(i32 source, T InitInf = Inf)
+            {
+                auto dist = Vec<T>(cntP, InitInf);
+                auto inque = BitSet<cntP>();
+                dist[source] = 0;
+                std::queue<i32> q({source});
+                inque.flip(source);
+                while (!q.empty())
+                {
+                    i32 u = q.front();
+                    q.pop();
+                    inque.flip(u);
+                    for (i32 i = head[u]; i != -1; i = edge[i].next)
+                    {
+                        i32 v = edge[i].to;
+                        T w = edge[i].weight;
+                        if (dist[v] > dist[u] + w)
+                        {
+                            dist[v] = dist[u] + w;
+                            if(inque[v] == 0)
+                            {
+                                q.push(v);
+                                inque.flip(v);
+                            }
+                        }
+                    }
+                }
+                return dist;
+            }
+
+            std::array<LFSEdge<T>, MaxSize> edge;
+            std::array<i32, MaxSize> head;
+            i32 cntP;
+            i32 cntE;
+        };
     }
-    namespace String
+
+    namespace StringAlgo
     {
         /**
          * @brief 统计目标串中有多少模式串
@@ -270,51 +392,112 @@ inline namespace My
             return valBaseY;
         }
 
-        /**
-         * @brief 埃拉托色尼筛，O(Nlog N)
-         */
-        TMP_TV(i64)
-        class Eratosthenes
+        namespace PrimeSieve
         {
-        public:
-            Eratosthenes() {}
-            // 返回前 n 个数中的素数
-            static Vec<i64> GetPrime(i64 n)
+            /**
+            * @brief 埃拉托色尼筛，O(Nlog N)
+            */
+            TMP_TV(i32)
+            Vec<i64> Eratosthenes = []() -> Vec<i64>
             {
-                ans.fill(0), isPrime.fill(false), tot = 0;
-                CheckPrime(n);
-                return Vec<i64>(ans.begin(), ans.begin() + tot);
-            }
-
-        private:
-            static std::array<i64, v> ans;
-            static std::array<bool, v> isPrime;
-            static i64 tot;
-            // 检查前 n 个数中是素数的数目
-            static void CheckPrime(i64 n)
-            {
-                FORINC(i, 2, n + 1)
+                std::array<i64, v> prime;
+                i32 tot = 0;
+                BitSet<v + 1> notPrime;
+                notPrime.flip(0), notPrime.flip(1);
+                FORINC(i, 2, v + 1)
                 {
-                    isPrime[i] = true;
-                }
-                FORINC(i, 2, n + 1)
-                {
-                    if (isPrime[i])
-                    {
-                        if (n / i < i)
-                            break;
-                        FORINC_STP(j, i * i, n + 1, i)
+                    if (!notPrime[i])
+                        prime[tot++] = i;
+                    if (i * i <= v)
+                        FORINC_STP(j, i * i, v + 1, i)
                         {
-                            isPrime[j] = false;
+                            notPrime.flip(i);
                         }
-                        FORINC(i, 2, n + 1)
+                }
+                return Vec<i64>(prime.begin(), prime.begin() + tot);
+            }();
+
+            /**
+            * @brief 欧拉筛，O(N)
+            */
+            TMP_TV(i32)
+            Vec<i64> Euler = []() -> Vec<i64>
+            {
+                std::array<i64, v> prime;
+                i32 tot = 0;
+                BitSet<v + 1> notPrime;
+                FORINC(i, 2, v + 1)
+                {
+                    if (!notPrime[i])
+                        prime[tot++] = i;
+                    FORINC(j, 0, tot)
+                    {
+                        i64 p = prime[j];
+                        if (i * p <= v)
                         {
-                            if (isPrime[i])
-                                ans[++tot] = i;
+                            notPrime.flip(p * i);
+                            if (i % p == 0)
+                                break;
                         }
                     }
                 }
+                return Vec<i64>(prime.begin(), prime.begin() + tot);
+            }();
+        }
+    }
+
+    // 4. Data Structure
+    inline namespace
+    {
+        using Veci = Vec<i32>;
+        using Vecl = Vec<i64>;
+        using Vecf = Vec<f32>;
+        using Vecd = Vec<f64>;
+        using Pointi = std::pair<i32, i32>;
+        using Pointl = std::pair<i64, i64>;
+        using Pointf = std::pair<f32, f32>;
+        using Pointd = std::pair<f64, f64>;
+        TMP_T using MinHeap = std::priority_queue<T, Vec<T>, std::greater<T>>;
+        TMP_T using MaxHeap = std::priority_queue<T, Vec<T>, std::less<T>>;
+
+        TMP_TV(i32)
+        class DisjointSet
+        {
+        public:
+            DisjointSet()
+            {
+                rank.fill(0), parent.fill(-1);
             }
+
+            /**
+             * @brief 找祖先
+             */
+            i32 Find(i32 x) { return x == parent[x] ? x : (parent[x] = Find(parent[x])); }
+
+            /**
+             * @brief 按秩合并，检查 x y 是否在一个连通分量，在合并会成环，返回 false
+             */
+            bool Union(i32 x, i32 y)
+            {
+                i32 fx = Find(x), fy = Find(y);
+                if (fx == fy)
+                    return false;
+                if (rank[fx] > rank[fy])
+                    parent[fy] = fx;
+                else
+                {
+                    parent[fx] = fy;
+                    if (rank[fx] == rank[fy])
+                        ++rank[fy];
+                }
+                return true;
+            }
+
+            // 祖先数组，提供修改
+            std::array<i32, v> parent;
+
+        private:
+            std::array<i32, v> rank;
         };
     }
 }
@@ -333,7 +516,6 @@ inline namespace LeetCodeDataStructure
     };
 }
 #endif
-
 ```
 
 

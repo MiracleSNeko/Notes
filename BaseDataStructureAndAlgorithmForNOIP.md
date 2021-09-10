@@ -1,6 +1,6 @@
 # NOIP基础数据结构与算法
 
->   https://www.bilibili.com/video/BV1qj411f7NL
+> https://www.bilibili.com/video/BV1qj411f7NL
 
 ## 1. 基础数据结构
 
@@ -9,10 +9,11 @@
 插入维护时间为 $O(N)$ 。层数 $h = O(log\ n)$，$i$ 层 $2^i$ 个数字 $h-i$ 深, $\sum 2^i * (n-i) = O(log \ n)$
 
 ```c++
-int w[200002];
+int w[200002]; 
 
 void down(int k)
 {
+
     int l = 2*k, r = 2*k + 1;
     if(w[l] < w[k] || w[r] < w[k])
     {
@@ -21,17 +22,21 @@ void down(int k)
         swap(w[k], w[t]);
         down(t);
     } 
+
 }
 
 void up(int k)
 {
+
     while (k > 1 && w[k] < w[k>>1])
     {
         // 和父亲交换
         swap(w[k], w[k>>1]);
         up(k>>1);
     }
+
 }
+
 ```
 
 ```go
@@ -117,8 +122,6 @@ func maxCmp(ah *ArrayHeap, i, j int) bool {
 }
 ```
 
-
-
 ### 1.2 左偏树
 
 定义一个树的斜深度为从根节点开始一直向右走到叶子节点的步数。左偏树是特殊的堆，满足左儿子大小不小于右儿子，关键操作：合并
@@ -128,11 +131,14 @@ func maxCmp(ah *ArrayHeap, i, j int) bool {
 ```c++
 struct tree
 {
+
     int l, r, size, w; // 权值
-} t[110000];
+
+} t[110000]; 
 // k1, k2 为根, 合并到 k1 为根, k2 合并为 k2 右儿子
 int merge(int k1, int k2)
 {
+
     if (k1 == 0 || k2 == 0) return k1 + k2;
     if (t[k1].w > t[k2].w) swap(k1, k2); // 小根堆
     t[k1].r = merge(t[k1].r, k2);
@@ -141,10 +147,12 @@ int merge(int k1, int k2)
     // 更新大小
     t[k1].size = t[t[k1].l].size + t[t[k1].r].size + 1;
     return k1;
+
 }
 
 // 插入变成和一个单节点左偏树合并
 // 弹顶变成合并根的左右儿子
+
 ```
 
 ### 1.3 ST 表
@@ -170,12 +178,13 @@ void init()
 ```c++
 int query(int l, int r)
 {
+
     int x = log(r- l + 1)/log2;
     return min(f[r][x], f[l + (1 << x) ][x])
+
 }
+
 ```
-
-
 
 ## 2. 算法
 
@@ -203,13 +212,16 @@ func fastPowWithMod(x, n int64) (ret int64) {
 // f[i][j] 表示 i 向上走 2^j 步到达的点
 void init()
 {
+
     for (int i = 1; i <= n; ++i) f[i][0] = p[i];
     for (int j = 1; j <= 20; ++j)
         for (int i = 1; i <= n; ++i)
             f[i][j] = f[f[i][j-1]][j-1];
+
 }
 int lca(int u, int v)
 {
+
     // 第一步 u v 跳到同一层
     if (dep[u] > dep[v]) swap(u, v);
     for (int j = 20; j >= 0; --j) if (dep[f[v][j]] >= dep[u]) v = f[v][j];
@@ -217,7 +229,9 @@ int lca(int u, int v)
     // 第二步 从同一层往上跳。妙啊！
     for (int j = 20; j >= 0; --j) if (f[u][j] != f[v][j]) u = f[u][j], v = f[v][j];
 	return f[u][0];
+
 }
+
 ```
 
 树上 LCA 可以带一些信息
@@ -252,6 +266,70 @@ Info lca(int u, int v)
 }
 ```
 
-一个例子：求 u -> v 的点权和，可以用 s[u] 表示 u 到根的点权和，那么 $s_{u,v} = s[u] + s[v] - 2*s[lca(u, v)] + w[lca(u, v)]$
+一个例子：求 u -> v 的点权和，可以用 s[u] 表示 u 到根的点权和，那么 $s_{u, v} = s[u] + s[v] - 2*s[lca(u, v)] + w[lca(u, v)]$
 
 那么 s[u] 应该怎么维护? 
+
+### 2.3 素数筛
+
+*   Eratosthenes 埃氏筛
+    列出所有数，从 2 开始，到 $\sqrt{N}$ 结束，如果这个数是素数，划掉他的所有倍数。下一个素数找下一个未划掉的数即可。
+
+    ```c++
+    /**
+     * @brief 埃拉托色尼筛，O(Nlog N)
+    */
+    TMP_TV(i64)
+    Vec<i64> Eratosthenes = []() -> Vec<i64>
+    {
+        Vec<i64> prime; 
+        BitSet<v + 1> notPrime; 
+        notPrime.flip(0), notPrime.flip(1); 
+        FORINC(i, 2, v + 1)
+        {
+            if (!notPrime[i])
+                prime.emplace_back(i); 
+            if (i * i <= v)
+                FORINC_STP(j, i * i, v + 1, i)
+                {
+                    notPrime.flip(i); 
+                }
+        }
+        return prime; 
+    }();
+    ```
+
+-   Euler 欧拉筛
+
+    埃氏筛会出现重复筛选 ( 比如 3 和 5 都会划去 15)。欧拉筛的思想是让每一个合数用其最小质因数筛到。如图所示
+
+    ![](./images/noip/eulerseive.png)
+
+    ```c++
+    /**
+    * @brief 欧拉筛，O(N)
+    */
+    TMP_TV(i64)
+    Vec<i64> Euler = []() -> Vec<i64>
+    {
+        Vec<i64> prime;
+        BitSet<v + 1> notPrime;
+        FORINC(i, 2, v + 1)
+        {
+            if (!notPrime[i])
+                prime.emplace_back(i);
+            for (auto p : prime)
+            {
+                if (i * p <= v)
+                {
+                    notPrime.flip(p * i);
+                    if (i % p == 0)
+                        break;
+                }
+            }
+        }
+        return prime;
+    }();
+    ```
+
+    

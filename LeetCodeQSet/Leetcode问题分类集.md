@@ -1,3 +1,7 @@
+# LeetCode 问题分类集
+
+![](./imgs/complexity.jpg)
+
 # 0. 贪心
 
 ## 0.1 贪心算法概述
@@ -7,19 +11,19 @@
 
 ### 0.1.1 最优化问题的几个基本概念
 
--   目标函数 
+*   目标函数 
      解决一个最优化问题，首先要将问题抽象成一个数学函数，这也就是一个数学建模的过程，这个能够描述问题的函数就称为『目标函数』，这个函数的最大/小值就是我们要求的最优值。
 
--   约束条件 
+*   约束条件 
      任何函数都有它的取值范围，所有取值范围的集合就称为『约束条件』。
 
--   可行解 
+*   可行解 
      满足所有约束条件的解称为『可行解』。
 
--   最优解 
+*   最优解 
      满足约束条件，并且使得目标函数最大/小的解称为『最优解』。
 
--   贪心法的求解思路
+*   贪心法的求解思路
     既然贪心法用于解决最优化问题，所以我们首先对问题进行数学建模，找出其中的：目标函数、约束条件。 
 
     最优化问题的结果需要用一个 n 元组来表示，如  $X=(x_1, x_2, x_3, …… ,x_n)$。 
@@ -32,6 +36,7 @@
 
 ```c++
 SolutionType greedy(int[] a) {
+
     // 一开始结果集为空
     SolutionType solution = {};
     // 进行n步选值
@@ -45,12 +50,13 @@ SolutionType greedy(int[] a) {
         // 将当前最优解添加至结果集中
         solution.add(x);
     }
+
 }
+
 ```
 
-
-
 ### 0.1.3 何时使用贪心法
+
 满足如下条件，可以使用贪心法：
 
 -   要求解的问题是一个最优化问题；
@@ -63,14 +69,10 @@ SolutionType greedy(int[] a) {
 
     >    并非对所有最优化问题都能找到最优量度标准，若找不到可以使用动态规划法。
 
-
-
 ### 0.1.4 总结
 
 贪心法用于求解最优化问题。采用多步决策的方式求解，每一步根据最优量度标准求出结果集的一个分量，保证该分量为当前的局部最优解。那么当进行n步决策后，就求出结果集的所有分量。只要最优量度标准选的合理，最终的结果就是一个最优解。 
 当然，你选取的那个最优量度标准究竟能不能导致整体最优解，这是需要证明的。
-
-
 
 ## LC44 通配符匹配
 
@@ -188,6 +190,7 @@ func max(x, y int) int {
 ```c++
 class Solution {
 public:
+
     bool canJump(vector<int>& nums) {
         int n = nums.size();
         int rightmost = 0;
@@ -201,7 +204,9 @@ public:
         }
         return false;
     }
-};
+
+}; 
+
 ```
 
 ## LC134 加油站
@@ -263,11 +268,44 @@ class Solution {
 }
 ```
 
-## LC179 最大数
+## LC502 IPO
 
+![](./imgs/lc502q.png)
 
+![](./imgs/lc502a1.png)
 
+```c++
+// 一句银行家点醒梦中人，可惜我还是不会写，只能抄下三叶姐的思路
+class Solution
+{
+public:
 
+    int findMaximizedCapital(int k, int w, std::vector<int> &profits, std::vector<int> &capital)
+    {
+        auto l = profits.size();
+        Vec<Point> tasks;
+        FORINC(i, 0, l)
+        {
+            tasks.emplace_back(PAIR(profits[i], capital[i]));
+        }
+        std::sort(tasks.begin(), tasks.end(), [](const Point &lhs, const Point &rhs)
+                  { return lhs.second < rhs.second; });
+        MaxHeap<i32> pq;
+        i32 i = 0;
+        while (k--)
+        {
+            while (i < l && tasks[i].second <= w)
+                pq.push(tasks[i++].first);
+            if (pq.empty())
+                break;
+            w += pq.top(), pq.pop();
+        }
+        return w;
+    }
+
+}; 
+
+```
 
 # 1.回溯
 
@@ -381,11 +419,13 @@ func backtrack(idx, target int, path *[]int, ret *[][]int, candidates *[]int) {
 ```c++
 class Solution {
 private:
+
     vector<pair<int, int>> freq;
     vector<vector<int>> ans;
     vector<int> sequence;
 
 public:
+
     void dfs(int pos, int rest) {
         if (rest == 0) {
             ans.push_back(sequence);
@@ -419,7 +459,9 @@ public:
         dfs(0, target);
         return ans;
     }
-};
+
+}; 
+
 ```
 
 >   其实在 LC 39的代码里加一句判断即可
@@ -585,7 +627,7 @@ public class Solution {
 
 ![](./imgs/lc78a1.png)
 
->   其实幂集用掩码就完事儿了
+> 其实幂集用掩码就完事儿了
 
 ```rust
 impl Solution {
@@ -607,7 +649,7 @@ impl Solution {
 
 ![](./imgs/lc79q.png)
 
->   基础的回溯，无需题解
+> 基础的回溯，无需题解
 
 ```go
 func exist(board [][]byte, word string) bool {
@@ -772,7 +814,7 @@ func backtrack(start, end int) []*TreeNode {
 
 ![](./imgs/lc113q.png)
 
->   标准的 dfs，也可以理解为回溯
+> 标准的 dfs，也可以理解为回溯
 
 ```go
 func pathSum(root *TreeNode, targetSum int) [][]int {
@@ -806,9 +848,11 @@ func backtrack(root *TreeNode, path *[]int, ret *[][]int, target int) {
 template <typename HOFunctor>
 class YCombinator
 {
+
     HOFunctor func;
 
 public:
+
     template <typename Function>
     YCombinator(Function &&func) : func((Function &&) func) {}
 
@@ -817,10 +861,11 @@ public:
     {
         return func(*this, (Args &&) args...);
     }
-};
+
+}; 
 
 // template <typename Functor>
-// YCombinator(Functor) -> YCombinator<Functor>;
+// YCombinator(Functor) -> YCombinator<Functor>; 
 
 template <typename Function>
 YCombinator<Function> make_YCombinator(Function &&func) { return YCombinator<Function>(func); }
@@ -828,6 +873,7 @@ YCombinator<Function> make_YCombinator(Function &&func) { return YCombinator<Fun
 class Solution
 {
 public:
+
     std::vector<std::vector<int>> allPathsSourceTarget(std::vector<std::vector<int>> &graph)
     {
         std::vector<std::vector<int>> ans;
@@ -851,7 +897,9 @@ public:
         dfs(0);
         return ans;
     }
-};
+
+}; 
+
 ```
 
 # 2. 图
@@ -899,14 +947,17 @@ head[4] = 6     len[4] = 2
 struct Edge
 
 {
+
      int next;
      int to;
      int w;
-};
+
+}; 
 其中：
-edge[i].to表示第i条边的终点,
-edge[i].next表示与第i条边同起点的下一条边的存储位置,
+edge[i].to表示第i条边的终点, 
+edge[i].next表示与第i条边同起点的下一条边的存储位置, 
 edge[i].w为边权值.
+
 ```
 
 ![](./imgs/qianxiangxing4.png)
@@ -938,6 +989,7 @@ void add_edge(int u, int v, int w){ //加边函数。u为起点，v为终点，w
 4 1 5
 1 5 6
 4 5 7
+
 ```
 
 ![](./imgs/qianxiangxing5.png)
@@ -966,6 +1018,7 @@ void add_edge(int u, int v, int w){ //加边函数。u为起点，v为终点，w
 ```c++
 遍历函数如下：
 for(int i=1; i<=n; i++){ //n个起点    
+
         cout<<i<<endl;
         for(int j=head[i]; j!=-1; j=edge[j].next) //遍历以i为起点的所有边        
             cout<<i<<" "<<edge[j].to<<" "<<edge[j].w<<endl;
@@ -976,6 +1029,7 @@ for(int i=1; i<=n; i++){ //n个起点
 第二层for循环：遍历以i为起点的所有边，j首先等于head[i]。
 注意：head[i]表示与点i起点相同的最后一条边的编号。
 然后，通过edge[j].next来找与边j起点相同的上一条边的编号，终止条件为edge[j].next=-1。
+
 ```
 
 ### 2.1.2 图搜索算法
@@ -1011,14 +1065,92 @@ for(int i=1; i<=n; i++){ //n个起点
 -   SPFA 算法
 
     ![](./imgs/spfa1.png)
+    
+    >   带 SPFA 的链式前向星实现
+    
+    ```c++
+    /**
+     * @brief 链式前向星数据结构
+     */
+    TMP_T struct LFSEdge
+    {
+        i32 next, to;
+        T weight;
+    };
+    /**
+     * @brief 链式前向星存图，加 Dijkstra、SPFA 求最短路
+     */
+    template <typename T, i32 MaxSize>
+    class ListForwardStar
+    {
+    public:
+        ListForwardStar(i32 pointNum) : cntP(pointNum), cntE(0) { head.fill(-1); }
+    
+        /**
+         * @brief 加边
+         */
+        void AddEdge(i32 u, i32 v, T w) noexcept
+        {
+            edge[cntE].to = v;         // 终点
+            edge[cntE].weight = w;     //.权值
+            edge[cntE].next = head[u]; // 以 u 为起点的最后一条边的编号
+                                      // 也就是与这个边起点相同的上一条边的编号
+            head[u] = cntE++;          // 更新以 u 为起点的上一条边的编号
+                                      // 也就是刚插入的这条边
+        }
+    
+        /**
+         * @brief SPFA 求最短路。输入源点，返回从源点到各个点最小距离
+         */
+        Vec<T> SPFASolve(i32 source, T InitInf = Inf)
+        {
+            auto dist = Vec<T>(cntP, InitInf);
+            auto inque = BitSet<cntP>();
+            dist[source] = 0;
+            std::queue<i32> q({source});
+            inque.flip(source);
+            while (!q.empty())
+            {
+                i32 u = q.front();
+                q.pop();
+                inque.flip(u);
+                for (i32 i = head[u]; i != -1; i = edge[i].next)
+                {
+                    i32 v = edge[i].to;
+                    T w = edge[i].weight;
+                    if (dist[v] > dist[u] + w)
+                    {
+                        dist[v] = dist[u] + w;
+                        if(inque[v] == 0)
+                        {
+                            q.push(v);
+                            inque.flip(v);
+                        }
+                    }
+                }
+            }
+            return dist;
+        }
+    
+        std::array<LFSEdge<T>, MaxSize> edge;
+        std::array<i32, MaxSize> head;
+        i32 cntP;
+        i32 cntE;
+    };
+    ```
+
+    
+
+    
 
 ### 2.1.3 图排序算法
 
--   拓扑排序
-
+*   拓扑排序
     ![](./imgs/toposort1.png)
 
--   
+### 2.1.4 连通分量
+
+*   并查集
 
 ## LC207 课程表
 
@@ -1066,6 +1198,83 @@ func canFinish(numCourses int, prerequisites [][]int) bool {
 }
 ```
 
+## LC765 情侣牵手
+
+![](./imgs/lc765q.png)
+
+> 并查集求连通分量
+
+![](./imgs/lc765a1.png)
+
+```c++
+class Solution
+{
+public:
+
+    int minSwapsCouples(std::vector<int> &row)
+    {
+        DisjointSet<100> dsj;
+        auto n = row.size(), hfn = row.size() / 2;
+        auto cnt = 0;
+        FORINC(i, 0, hfn)
+        {
+            dsj.parent[i] = i;
+        }
+        FORINC_STP(i, 0, n, 2)
+        {
+            dsj.Union(row[i] / 2, row[i + 1] / 2);
+        }
+        FORINC(i, 0, hfn)
+        {
+            if (i == dsj.Find(i))
+                ++cnt;
+        }
+        return hfn - cnt;
+    }
+
+}; 
+
+```
+
+## LC1928 规定时间内到达终点的最小花费
+
+![](./imgs/lc1928q.png)
+
+## LCP35 电动车游城市
+
+![](./imgs/lcp35q.png)
+
+![](./imgs/lcp35q2.png)
+
+>   LC 春季赛题，拆点最短路 SPFA 模板
+
+思路：将每个顶点分成若干个 （顶点号，电量）的二元组，此时问题就变为从（出发点，电量0）出发到任意 end 节点的最短路问题。
+
+## LC743 网络延迟时间
+
+![](./imgs/lc743q.png)
+
+>   最短路径最大值。给定源点，求出到所有点的最短路径，其中最大值就是结果。如果不可达，最大值应该为 Inf，此时返回 -1 即可
+
+```c++
+// 偷懒用了板子
+class Solution
+{
+public:
+    int networkDelayTime(std::vector<std::vector<int>> &times, int n, int k)
+    {
+        CHEATING_HEAD;
+        auto graph = GraphAlgo::LinkedForwardStar<i32, 6010>(n);
+        for (auto p : times)
+        {
+            graph.AddEdge(p[0] - 1, p[1] - 1, p[2]);
+        }
+        auto ans = GetMax(graph.SPFASolve(k - 1));
+        return ans == Inf ? -1 : ans;
+    }
+};
+```
+
 
 
 # 3 线段树
@@ -1098,16 +1307,19 @@ void build(int s, int t, int p) {
 
 ```c++
 int getsum(int l, int r, int s, int t, int p) {
-  // [l,r] 为查询区间,[s,t] 为当前节点包含的区间,p 为当前节点的编号
+  // [l, r] 为查询区间, [s, t] 为当前节点包含的区间, p 为当前节点的编号
   if (l <= s && t <= r)
+
     return d[p];  // 当前区间为询问区间的子集时直接返回当前区间的和
-  int m = s + ((t - s) >> 1), sum = 0;
-  if (l <= m) sum += getsum(l, r, s, m, p * 2);
-  // 如果左儿子代表的区间 [l,m] 与询问区间有交集,则递归查询左儿子
-  if (r > m) sum += getsum(l, r, m + 1, t, p * 2 + 1);
-  // 如果右儿子代表的区间 [m+1,r] 与询问区间有交集,则递归查询右儿子
-  return sum;
+
+  int m = s + ((t - s) >> 1), sum = 0; 
+  if (l <= m) sum += getsum(l, r, s, m, p * 2); 
+  // 如果左儿子代表的区间 [l, m] 与询问区间有交集, 则递归查询左儿子
+  if (r > m) sum += getsum(l, r, m + 1, t, p * 2 + 1); 
+  // 如果右儿子代表的区间 [m+1, r] 与询问区间有交集, 则递归查询右儿子
+  return sum; 
 }
+
 ```
 
 ![](./imgs/xianduanshu5.png)
@@ -1141,21 +1353,24 @@ void update(int l, int r, int c, int s, int t, int p) {
 ```C++
 // 区间查询（区间求和）
 int getsum(int l, int r, int s, int t, int p) {
-  // [l,r] 为查询区间,[s,t] 为当前节点包含的区间,p为当前节点的编号
-  if (l <= s && t <= r) return d[p];
+  // [l, r] 为查询区间, [s, t] 为当前节点包含的区间, p为当前节点的编号
+  if (l <= s && t <= r) return d[p]; 
   // 当前区间为询问区间的子集时直接返回当前区间的和
-  int m = s + ((t - s) >> 1);
+  int m = s + ((t - s) >> 1); 
   if (b[p]) {
+
     // 如果当前节点的懒标记非空,则更新当前节点两个子节点的值和懒标记值
     d[p * 2] += b[p] * (m - s + 1), d[p * 2 + 1] += b[p] * (t - m),
         b[p * 2] += b[p], b[p * 2 + 1] += b[p];  // 将标记下传给子节点
     b[p] = 0;                                    // 清空当前节点的标记
+
   }
-  int sum = 0;
-  if (l <= m) sum = getsum(l, r, s, m, p * 2);
-  if (r > m) sum += getsum(l, r, m + 1, t, p * 2 + 1);
-  return sum;
+  int sum = 0; 
+  if (l <= m) sum = getsum(l, r, s, m, p * 2); 
+  if (r > m) sum += getsum(l, r, m + 1, t, p * 2 + 1); 
+  return sum; 
 }
+
 ```
 
 ```c++
@@ -1192,7 +1407,7 @@ int getsum(int l, int r, int s, int t, int p) {
 
 ## 3.2 线段树实现
 
-二叉树的节点区间定义，`[start, end]`代表节点的区间范围，`max` 是节点在`[start, end]`区间上的最大值 `left` , `right` 是当前节点区间划分之后的左右节点区间：
+二叉树的节点区间定义， `[start, end]` 代表节点的区间范围， `max` 是节点在 `[start, end]` 区间上的最大值 `left` , `right` 是当前节点区间划分之后的左右节点区间：
 
 ```java
 // 节点区间定义
@@ -1211,7 +1426,7 @@ public class SegmentTreeNode {
 }
 ```
 
-给定一个区间，我们要维护线段树中存在的区间中最大的值。这将有利于我们高效的查询任何区间的最大值。给出`A`数组，基于`A`数组构建一棵维护最大值的线段树，我们可以在`O(logN)`的复杂度内查询任意区间的最大值：
+给定一个区间，我们要维护线段树中存在的区间中最大的值。这将有利于我们高效的查询任何区间的最大值。给出 `A` 数组，基于 `A` 数组构建一棵维护最大值的线段树，我们可以在 `O(logN)` 的复杂度内查询任意区间的最大值：
 
 比如原数组 `A = [1, 4, 2, 3]`
 
@@ -1239,11 +1454,12 @@ public SegmentTreeNode buildhelper(int left, int right, int[] A){
 
 **举一反三：**
  如果需要区间的最小值:
- `root.min = Math.min(root.left.min, root.right.min);`
- 如果需要区间的和:
- `root.sum = root.left.sum + root.right.sum;`
+ `root.min = Math.min(root.left.min, root.right.min); `
 
-更新序列中的一个节点，如何把这种变化体现到线段树中去? 更新所以需要从叶子节点一路走到根节点, 去更新线段树上的值。因为线段树的高度为`log(n)`,所以更新序列中一个节点的复杂度为`log(n)`。
+ 如果需要区间的和:
+ `root.sum = root.left.sum + root.right.sum; `
+
+更新序列中的一个节点，如何把这种变化体现到线段树中去? 更新所以需要从叶子节点一路走到根节点, 去更新线段树上的值。因为线段树的高度为 `log(n)` , 所以更新序列中一个节点的复杂度为 `log(n)` 。
 
 ```java
 // 单点更新的代码及注释
@@ -1266,7 +1482,7 @@ public void modify(SegmentTreeNode root, int index, int value) {
 }
 ```
 
-线段树的区间查询操作就是将当前区间分解为较小的子区间,然后由子区间的最大值就可以快速得到需要查询区间的最大值。任意长度的线段，最多被拆分成$log(n)$​条线段树上存在的线段，所以查询的时间复杂度为`O(log(n))`。
+线段树的区间查询操作就是将当前区间分解为较小的子区间, 然后由子区间的最大值就可以快速得到需要查询区间的最大值。任意长度的线段，最多被拆分成$log(n)$​条线段树上存在的线段，所以查询的时间复杂度为 `O(log(n))` 。
 
 ```java
 // 区间查询的代码及注释
@@ -1388,6 +1604,7 @@ public int query(TreeNode root, int start, int end) {
 class SegmentTreeNode
 {
 public:
+
     int start, end;
     SegmentTreeNode *left, *right;
     SegmentTreeNode(int start, int end)
@@ -1395,12 +1612,15 @@ public:
         this->start = start, this->end = end;
         this->left = this->right = nullptr;
     }
-};
+
+}; 
 
 class Solution
 {
 public:
+
     /**
+
      * @param start: start value.
      * @param end: end value.
      * @return: The root of Segment Tree.
@@ -1421,7 +1641,9 @@ public:
         } 
         return root;
     }
-};
+
+}; 
+
 ```
 
 ## LiC202 线段树的查询
@@ -1475,6 +1697,7 @@ public:
 class SegmentTreeNode
 {
 public:
+
     int start, end, max;
     SegmentTreeNode *left, *right;
     SegmentTreeNode(int start, int end, int max)
@@ -1483,11 +1706,14 @@ public:
         this->left = this->right = nullptr;
         this->max = max;
     }
-};
+
+}; 
 
 class Solution {
 public:
+
     /**
+
      * @param root: The root of segment tree.
      * @param index: index.
      * @param value: value
@@ -1518,7 +1744,9 @@ public:
 
         root->max = std::max(root->left->max, root->right->max);
     }
-};
+
+}; 
+
 ```
 
 ## LiC247 线段树的查询2
@@ -1580,6 +1808,7 @@ public:
 class SegmentTreeNode
 {
 public:
+
     int start, end, max;
     SegmentTreeNode *left, *right;
     SegmentTreeNode(int start, int end, int max)
@@ -1589,12 +1818,15 @@ public:
         this->max = max;
         this->left = this->right = NULL;
     }
-};
+
+}; 
 
 class Solution
 {
 public:
+
     /**
+
      * @param A: a list of integer
      * @return: The root of Segment Tree
      */
@@ -1605,6 +1837,7 @@ public:
     }
 
     /**
+
      * @param start: start index
      * @param end: end index
      * @param A: a list of integer
@@ -1631,7 +1864,9 @@ public:
         }
         return root;
     }
-};
+
+}; 
+
 ```
 
 ## LiC205 区间最小数
@@ -1738,15 +1973,18 @@ public:
 ```c++
 struct SegmentTreeNode2
 {
+
     int start, end;
     int64_t sum;
     SegmentTreeNode2 *left, *right;
     SegmentTreeNode2(int start, int end, int min) : start(start), end(end), min(min) {}
-};
+
+}; 
 
 class SegmentTree
 {
 public:
+
     SegmentTree(const std::vector<int> &A)
     {
         tree = buildhelper(0, A.size() - 1, A);
@@ -1763,6 +2001,7 @@ public:
     }
 
 private:
+
     SegmentTreeNode2 *tree;
 
     SegmentTreeNode2 *buildhelper(int start, int end, const std::vector<int> &A)
@@ -1832,16 +2071,19 @@ private:
         }
         return SegmentTree::queryhelper(root->left, start, end) + SegmentTree::queryhelper(root->right, start, end);
     }
-};
+
+}; 
 
 class Solution
 {
 public:
+
     /* you may need to use some attributes here */
     SegmentTree *tree;
 
     /**
-    * @param A: An integer array
+
+    - @param A: An integer array
     */
     Solution(std::vector<int> A)
     {
@@ -1850,6 +2092,7 @@ public:
     }
 
     /**
+
      * @param start: An integer
      * @param end: An integer
      * @return: The sum from start to end
@@ -1861,6 +2104,7 @@ public:
     }
 
     /**
+
      * @param index: An integer
      * @param value: An integer
      * @return: nothing
@@ -1870,7 +2114,8 @@ public:
         // write your code here
         tree->modify(index, value);
     }
-};
+}; 
+
 ```
 
 ## LiC751 约翰的生意
@@ -1986,7 +2231,7 @@ public:
 
 ![](./imgs/lc560q.png)
 
->   前缀和 + HashMap
+> 前缀和 + HashMap
 
 ```go
 func subarraySum(nums []int, k int) (ret int) {
@@ -2070,12 +2315,13 @@ func maxFrequency(nums []int, k int) int {
 
 ![](./imgs/lc1744q.png)
 
->   前缀和问题，求在第 t 类之前有多少糖，然后按最快速度和最慢速度分别吃即可。
+> 前缀和问题，求在第 t 类之前有多少糖，然后按最快速度和最慢速度分别吃即可。
 
 ```c++
 class Solution
 {
 public:
+
     std::vector<bool> canEat(std::vector<int> &candiesCount, std::vector<std::vector<int>> &queries)
     {
         size_t len = candiesCount.size();
@@ -2096,7 +2342,9 @@ public:
         }
         return ans;
     }
-};
+
+}; 
+
 ```
 
 ## LCMS17.24 最大子矩阵
@@ -2143,7 +2391,7 @@ func getMaxMatrix(matrix [][]int) (ans []int) {
 
 ![](./imgs/lc238q.png)
 
->   前缀积（大雾
+> 前缀积（大雾
 
 ![](./imgs/lc238a1.png)
 
@@ -2151,6 +2399,7 @@ func getMaxMatrix(matrix [][]int) (ans []int) {
 class Solution
 {
 public:
+
     std::vector<int> productExceptSelf(std::vector<int> &nums)
     {
         size_t len = nums.size();
@@ -2168,7 +2417,9 @@ public:
         leftmul[0] = rightmul;
         return leftmul;
     }
-};
+
+}; 
+
 ```
 
 ## LC1074 元素和为目标值的子矩阵数量
@@ -2213,19 +2464,19 @@ func numSubmatrixSumTarget(matrix [][]int, target int) (ans int) {
 
 ![](./imgs/lc862a1.png)
 
->   -   为什么要用单调队列？
+> -   为什么要用单调队列？
 >
->       因为是求区间最短，可以很显然可以想到滑动窗，但是这个数组并不满足单调性：数组中存在负数，导致窗口值不单调，但是因为有负数所以才会导致当我们找到某个窗口和蔚K，窗内依然可能存在可行解，原因如下：
->       对于j前面满足≥K的所有i，如果$i_1 < i_2, arr[i_1] > arr[i_2]$,那么可行解一定是i2，因为$i_2$更大且$arr[i_2]$更小
->       所以我们可以维护一个单调队列保证窗口内值的单调性：
->       思路：基于最近我们总是希望对于每个右指针j，左指针能够尽可能的靠近，并且值尽可能地大，如果有一个i-1的值>i处的值，那么i-1处的值就一定不是正确解，因为i处的值更近并且能够得到的数组和更大，如果i-1满足i一定满足，以此来减少我们的判断量
->       如果队首的值满足当前值-队首值>=K,记录长度并弹出队首
->       如果当前值<队列尾，那么弹出队尾保持队列单调
+> 因为是求区间最短，可以很显然可以想到滑动窗，但是这个数组并不满足单调性：数组中存在负数，导致窗口值不单调，但是因为有负数所以才会导致当我们找到某个窗口和蔚K，窗内依然可能存在可行解，原因如下：
+> 对于j前面满足≥K的所有i，如果$i_1 < i_2, arr[i_1] > arr[i_2]$, 那么可行解一定是i2，因为$i_2$更大且$arr[i_2]$更小
+> 所以我们可以维护一个单调队列保证窗口内值的单调性：
+> 思路：基于最近我们总是希望对于每个右指针j，左指针能够尽可能的靠近，并且值尽可能地大，如果有一个i-1的值>i处的值，那么i-1处的值就一定不是正确解，因为i处的值更近并且能够得到的数组和更大，如果i-1满足i一定满足，以此来减少我们的判断量
+> 如果队首的值满足当前值-队首值>=K, 记录长度并弹出队首
+> 如果当前值<队列尾，那么弹出队尾保持队列单调
 >
->       作者：ppppjcute
->       链接：https://leetcode-cn.com/problems/shortest-subarray-with-sum-at-least-k/solution/java-qian-zhui-he-yu-shuang-duan-by-ppppjqute/
->       来源：力扣（LeetCode）
->       著作权归作者所有。商业转载请联系作者获得授权，非商业转载请注明出处。
+> 作者：ppppjcute
+> 链接：https://leetcode-cn.com/problems/shortest-subarray-with-sum-at-least-k/solution/java-qian-zhui-he-yu-shuang-duan-by-ppppjqute/
+> 来源：力扣（LeetCode）
+> 著作权归作者所有。商业转载请联系作者获得授权，非商业转载请注明出处。
 
 ```java
 class Solution {
@@ -2278,7 +2529,8 @@ $S | (1 << j)$ 将第 $j$ 个二进制位置为 1， 即在当前访问路径里
 设置循环时，保证 $S | (1 << j)$ 在 $S$ 之后出现即可。显然，往 $S$ 添加二进制 1 会让 S 增大。所以循环条件是
 
 ```c++
-for (int S = 0; S < (1 << n);; ++S) {}
+for (int S = 0; S < (1 << n); ; ++S) {}
+
 ```
 
 所以完整的核心代码为
@@ -2294,7 +2546,7 @@ for (int s = 0; s < (1 << n); ++s)
 
 ![](./imgs/lc5856q.png)
 
->   注意：这不是个贪心的题！贪心需要局部最优和全局情况无关，但是这个是有关的！
+> 注意：这不是个贪心的题！贪心需要局部最优和全局情况无关，但是这个是有关的！
 
 ![](./imgs/lc5856a1.png)
 
@@ -2345,12 +2597,13 @@ impl Solution {
 
 ![](./imgs/lc1723a1.png)
 
->   此法较易理解，单调性和二分的左右界都是显然的
+> 此法较易理解，单调性和二分的左右界都是显然的
 
 ```c++
 class Solution
 {
 public:
+
     int minimumTimeRequired(std::vector<int> &jobs, int k)
     {
         int lb = *std::max_element(jobs.begin(), jobs.end());
@@ -2397,7 +2650,9 @@ public:
         }
         return lb;
     }
-};
+
+}; 
+
 ```
 
 ### 2. 状态压缩 DP
@@ -2453,7 +2708,7 @@ public:
 
 ![](./imgs/lc689q.png)
 
->   排序 dp，看添加之后是否能保证和小于等于 sum(num) / k ，不然肯定为 False
+> 排序 dp，看添加之后是否能保证和小于等于 sum(num) / k ，不然肯定为 False
 
 ![](./imgs/lc689a1.png)
 
@@ -2461,6 +2716,7 @@ public:
 class Solution
 {
 public:
+
     bool canPartitionKSubsets(std::vector<int> &nums, int k)
     {
         int n = nums.size();
@@ -2497,7 +2753,9 @@ public:
         }
         return dp[ss-1] == 1;
     }
-};
+
+}; 
+
 ```
 
 ## LC526 优美排列
@@ -2544,6 +2802,7 @@ public:
 inline int lowbit(int x) { return x & (-x); }
 inline int count1(int x)
 {
+
     int ans = 0;
     while (x)
     {
@@ -2551,11 +2810,13 @@ inline int count1(int x)
         ++ans;
     }
     return ans;
+
 }
 
 class Solution
 {
 public:
+
     int countArrangement(int n)
     {
         int ss = 1 << n;
@@ -2575,7 +2836,9 @@ public:
         }
         return dp[ss - 1];
     }
-};
+
+}; 
+
 ```
 
 ## 5.2 树形 DP
@@ -2681,6 +2944,3 @@ func sumOfDistancesInTree(n int, edges [][]int) []int {
 	return distSum
 }
 ```
-
-
-
