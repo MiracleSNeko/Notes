@@ -1152,6 +1152,51 @@ for(int i=1; i<=n; i++){ //n个起点
 
 *   并查集
 
+### 2.1.5 流
+
+>   来自 [OI Wiki]()
+
+**网络**
+
+首先，请分清楚 **网络**（或者流网络，Flow Network）与 **网络流**（Flow）的概念。
+
+网络是指一个有向图 $G=(V,E)$。
+
+每条边 $(u,v)\in E$ 都有一个权值 $c(u,v)$，称之为容量（Capacity），当 $(u,v)\notin E$ 时有 $c(u,v)=0$。
+
+其中有两个特殊的点：源点（Source）$s\in V$ 和汇点（Sink）$t\in V,(s\neq t)$。
+
+**流**
+
+设 $f(u,v)$ 定义在二元组 $(u\in V,v\in V)$ 上的实数函数且满足
+
+1.  容量限制：对于每条边，流经该边的流量不得超过该边的容量，即，$f(u,v)\leq c(u,v)$
+2.  斜对称性：每条边的流量与其相反边的流量之和为 0，即 $f(u,v)=-f(v,u)$
+3.  流守恒性：从源点流出的流量等于汇点流入的流量，即 $\forall x\in V-{s,t},\sum_{(u,x)\in E}f(u,x)=\sum_{(x,v)\in E}f(x,v)$
+
+那么 $f$ 称为网络 $G$ 的流函数。对于 $(u,v)\in E$，$f(u,v)$ 称为边的 **流量**，$c(u,v)-f(u,v)$ 称为边的 **剩余容量**。整个网络的流量为 $\sum_{(s,v)\in E}f(s,v)$，即 **从源点发出的所有流量之和**。
+
+一般而言也可以把网络流理解为整个图的流量。而这个流量必满足上述三个性质。
+
+*注*：流函数的完整定义为 
+$$f(u,v)=\left{\begin{aligned} &f(u,v),&(u,v)\in E\ &-f(v,u),&(v,u)\in E\ &0,&(u,v)\notin E,(v,u)\notin E \end{aligned}\right.$$
+
+**网络流的常见问题**
+
+网络流问题中常见的有以下三种：最大流，最小割，费用流。
+
+- 最大流
+
+    我们有一张图，要求从源点流向汇点的最大流量（可以有很多条路到达汇点），就是我们的最大流问题。
+
+- 最小费用最大流
+
+    最小费用最大流问题是这样的：每条边都有一个费用，代表单位流量流过这条边的开销。我们要在求出最大流的同时，要求花费的费用最小。
+
+- 最小割
+
+    割其实就是删边的意思，当然最小割就是割掉 $X$ 条边来让 $S$ 跟 $T$ 不互通。我们要求 $X$ 条边加起来的流量总和最小。这就是最小割问题。
+
 ## LC207 课程表
 
 ![](./imgs/lc207q.png)
@@ -1236,11 +1281,11 @@ public:
 
 ```
 
-## LC1928 规定时间内到达终点的最小花费
+## -LC1928 规定时间内到达终点的最小花费
 
 ![](./imgs/lc1928q.png)
 
-## LCP35 电动车游城市
+## -LCP35 电动车游城市
 
 ![](./imgs/lcp35q.png)
 
@@ -1249,6 +1294,82 @@ public:
 >   LC 春季赛题，拆点最短路 SPFA 模板
 
 思路：将每个顶点分成若干个 （顶点号，电量）的二元组，此时问题就变为从（出发点，电量0）出发到任意 end 节点的最短路问题。
+
+```c++
+// 借鉴的拆点 SPFA
+class Solution
+{
+public:
+    static constexpr i32 N = 110, M = 440;
+    i32 e[M], h[N], nx[M], w[M], tot;
+    i32 dist[N][N], vis[N][N];
+
+    void add(i32 u, i32 v, i32 ww)
+    {
+        e[tot] = v;
+        w[tot] = ww;
+        nx[tot] = h[u];
+        h[u] = tot++;
+    }
+
+    int electricCarPlan(VecVec<i32> &paths, i32 cnt, i32 st, i32 ed, Veci &charge)
+    {
+        CHEATING_HEAD;
+        memset(h, -1, sizeof(h));
+        for (auto p : paths)
+        {
+            add(p[0], p[1], p[2]);
+            add(p[1], p[0], p[2]);
+        }
+        // SPFA
+        std::queue<Pointi> q;
+        memset(dist, 0x3f, sizeof(dist));
+        memset(vis, 0, sizeof(vis));
+        FORINC(i, 0, cnt + 1)
+        {
+            dist[st][i] = i * charge[st];
+            vis[st][i] = 1;
+            q.push(PAIR(st, i));
+        }
+        while (!q.empty())
+        {
+            // std::tie(pos, chg) = q.front();
+            auto pp = q.front();
+            i32 pos = pp.first, chg = pp.second;
+            q.pop();
+            vis[pos][chg] = 0;
+            for (i32 i = h[pos]; i != -1; i = nx[i])
+            {
+                i32 npos = e[i];
+                if (chg < w[i]) // 电量不够
+                    continue;
+                for (i32 j = 0; j + chg - w[i] <= cnt; ++j)
+                {
+                    i32 nchg = j + chg - w[i];
+                    if(dist[npos][nchg] > dist[pos][chg] + w[i] + j * charge[npos])
+                    {
+                        dist[npos][nchg] = dist[pos][chg] + w[i] + j * charge[npos];
+                        if(vis[npos][nchg] == 0)
+                        {
+                            q.push(PAIR(npos, nchg));
+                            vis[npos][nchg] = 1;
+                        }
+                    }
+                }
+            }
+        }
+
+        i32 ans = Inf;
+        FORINC(i, 0, cnt + 1)
+        {
+            ans = std::min(ans, dist[ed][i]);
+        }
+        return ans;
+    }
+};
+```
+
+
 
 ## LC743 网络延迟时间
 
@@ -2944,3 +3065,17 @@ func sumOfDistancesInTree(n int, edges [][]int) []int {
 	return distSum
 }
 ```
+
+## 5.3 数位 DP
+
+## -LC600 不含连续 1 的非负整数
+
+![](./imgs/lc600q.png)
+
+![](./imgs/lc600a1.png)
+
+![](./imgs/lc600a2.png)
+
+```c++
+```
+

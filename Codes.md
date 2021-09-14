@@ -210,7 +210,7 @@ inline namespace My
             Vec<T> SPFASolve(i32 source, T InitInf = Inf)
             {
                 auto dist = Vec<T>(cntP, InitInf);
-                auto inque = BitSet<cntP>();
+                auto inque = BitSet<MaxSize>();
                 dist[source] = 0;
                 std::queue<i32> q({source});
                 inque.flip(source);
