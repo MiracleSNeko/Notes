@@ -1,0 +1,172 @@
+# 1. 引用与指针
+
+C : 传递值（复制） 传递指针（可修改）
+
+错误
+
+```cpp
+int main()
+{
+    // C 代码
+    int i = 1, j = 2;
+    swap(i, j);
+    // i == 1, j == 2
+}
+
+void swap(int a, int b)
+{
+    int c = a;
+    a = b;
+    b = c;
+}
+```
+
+正确
+
+```cpp
+void swap(int* a, int* b)
+{
+    int c = *a;
+    *a = *b;
+    *b = c;
+}
+
+int main()
+{
+    // C 代码
+    int i = 1, j = 2;
+    swap(&i, &j);
+    // i == 2, j == 1
+}
+```
+
+**C++简化代码，引入了概念：引用**
+
+```cpp
+void swap(int& a, int& b)
+{
+    // 此处 a 和 i 实际上是 **同一个变量**
+    // 因此，对 a 做的所有修改，都会反应在 i 上
+    // 引用其实类似一个指针，但是不需要手动去做解引用
+    int c = a;
+    a = b;
+    b = c;
+}
+
+int main()
+{
+    // C++ 代码
+    int i = 1, j = 2;
+    swap(i, j);
+    // i == 2, j == 1
+}
+```
+
+## C++ 引用 vs 指针
+
+引用变量是一个别名，也就是说，它是某个已存在变量的另一个名字。一旦把引用初始化为某个变量，就可以使用该引用名称或变量名称来指向变量。
+
+引用很容易与指针混淆，它们之间有三个主要的不同：
+
+- 不存在空引用。引用必须连接到一块合法的内存。
+- 一旦引用被初始化为一个对象，就不能被指向到另一个对象。指针可以在任何时候指向到另一个对象。
+- 引用必须在创建时被初始化。指针可以在任何时间被初始化。
+
+引用作为参数：省略复制
+
+```cpp
+#include <iostream>
+#include <iterator>
+#include <sstream>
+#include <vector>
+
+using namespace std;
+
+// 复制 1000000 个 int， 低效！
+void print(vector<int> nums)
+{
+    // ....
+}
+
+// 传递引用，消耗和指针差不多
+void print2(vector<int>& nums)
+{
+    // ...
+}
+
+int main()
+{
+    vector<int> nums(1000000, 0);
+
+    print(nums);
+    print2(nums);
+
+    return 0;
+}
+```
+
+如果不希望函数修改传入的引用，就用 **常引用**
+
+```cpp
+// 传入常引用，只能用不能改
+void print3(const vector<int>& nums)
+{
+    // ...
+}
+```
+
+引用作为返回值： **务必注意不能返回局部变量的引用！！！！！**
+
+```cpp
+#include <iostream>
+#include <iterator>
+#include <sstream>
+#include <vector>
+
+using namespace std;
+
+vector<int> create(int size)
+{
+    auto ret = vector<int>(size, 0);
+    return ret;
+}
+
+// 返回局部变量的引用，局部变量在函数结束后已经挂了，引用仍可访问！！
+// 一定不要返回局部变量的引用！！！！！
+vector<int>& create2(int size)
+{
+    auto ret = vector<int>(size, 0);
+    return ret;
+}
+
+int main()
+{
+    auto ret1 = create(1000000);
+    // auto ret2 = create2(100);
+    return 0;
+}
+```
+
+C++ 里尽可能用引用，别用指针。
+
+```
+#include <iostream>
+#include <iterator>
+#include <sstream>
+#include <vector>
+
+using namespace std;
+
+struct Student
+{
+    int     id;
+    string& name;
+};
+
+int main()
+{
+    string  zyl_name = "zyl";
+    Student zyl      = {0, zyl_name};
+    return 0;
+}
+```
