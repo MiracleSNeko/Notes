@@ -1,0 +1,455 @@
+# 0. C 迁移到 C++
+
+### 0.1 include, stdio
+
+```cpp
+// C
+#include <stdio.h> // printf scanf
+
+// C++
+#include <iostream> // std::cin std::cout
+
+using namespace std;
+
+int main()
+{
+    printf("%s", "hello, world\n");
+    // 输出流 <- 内容
+    std::cout << "hello, world" << 1 << 2.2 << std::endl;
+
+    int i;
+    scanf("%d", &i);
+
+    // 输入流 -> 内容
+    std::cin >> i;
+    std::cout << i << std::endl;
+    // end line -> '\n'
+    return 0;
+}
+```
+
+### 0.2 字符串
+
+```cpp
+#include <iostream>
+#include <string>
+
+using namespace std;
+
+int main()
+{
+    const char* c_str = "hello, world";
+    foo(c_str);
+    return 0;
+}
+
+void foo(char* str)
+{
+    str[0] = 'c';
+}
+```
+
+C 风格字符串：char* 指针，字面量不可更改
+
+```cpp
+#include <iostream>
+#include <string>
+
+using namespace std;
+
+int main()
+{
+    string str;
+    std::cin >> str;
+    std::cout << str << std::endl;
+    return 0;
+}
+```
+
+```cpp
+#include <iostream>
+#include <string>
+
+using namespace std;
+
+int main()
+{
+    string str, str2;
+    // 空格是分隔符
+    // std::cin >> str >> str2;
+    // 输入一个带空格的字符串 \r\n
+    std::getline(std::cin, str);
+    std::cout << str << std::endl;
+    return 0;
+}
+```
+
+C++ 字符串拼接
+
+```cpp
+#include <iostream>
+#include <string>
+
+using namespace std;
+
+int main()
+{
+    // hello world
+    // hello,world
+    string str, str2;
+    std::cin >> str >> str2;
+
+    string str3 = str + "," + str2;
+    std::cout << str3 << std::endl;
+
+    return 0;
+}
+```
+
+### 0.3 C++ 常用容器
+
+### 0.3.1 数组
+
+```cpp
+#include <algorithm>
+#include <iostream>
+#include <string>
+#include <vector>
+
+using namespace std;
+
+int main()
+{
+    // 创建
+    vector<int> vec1(/* size */ 10);
+    vector<int> vec2(/* size */ 10, /* init_value */ 1);
+    vector<int> vec3({1, 2, 3, 4, 5});
+
+    // 访问元素
+    vec1[0]    = 1;  // 不做任何检查
+    vec2.at(1) = 2;  // 有边界检查，越界抛出异常
+
+    // 追加元素
+    vec3.push_back(6);  // 自动扩容
+
+    // 遍历元素
+    int size = vec1.size();
+    for (int i = 0; i < size; i += 1)
+    {
+        // ...
+    }
+
+    // 排序
+    // #include <algorithm>
+    // **范围是左闭右开的**
+    std::sort(vec3.begin(), vec3.end());  // 从小到大排序
+    std::sort(vec3.begin(), vec3.begin() + 3, std::less<int>());  // 部分排序
+    std::sort(vec3.begin(), vec3.end(), std::greater<int>());  // 从大到小排序
+    // 自定义排序
+
+    // 复制
+    vector<int> vec4 = vec1;
+
+    // 泛型
+    // vector<T> T: 类型形参
+    // vector<int> int: 类型实参
+    vector<string>      vecs;
+    vector<vector<int>> vvec;
+
+		// 删除
+		vec3.erase(vec3.begin() + 4);
+
+    return 0;
+}
+```
+
+### 0.3.2 表
+
+```cpp
+#include <algorithm>
+#include <iostream>
+#include <map>
+#include <pair>
+#include <string>
+#include <unordered_map>
+
+using namespace std;
+
+int main()
+{
+    // 关联容器
+    // [ "qhn" -> "sb" ]
+    // [ "xs" -> "shuai" ]
+    // {key, value} 键值对
+
+    // map -> 查找 O(log N), 有序
+    // unordered_map -> 查找 O(1), 无序
+
+    // 创建
+    map<string, string>           names1;
+    map<string, string>           names2({{"Qhn", "Sb"}, {"Xs", "Shuai"}});
+    unordered_map<string, string> names3({"Zyj", "Noob"});
+
+    // 键值对的类型
+    // #include <pair>
+    pair<string, string> name = names2["Xs"];
+    // name.key name.value
+    string xs             = name.first;
+    string xs_description = name.second;
+
+    // 访问: 用 key 去访问
+    names2["Lyj"] = "Super Sb";  // 如果没有访问到，默认创建一个新的
+    names2.at("Xs");             // 如果没有访问到，异常
+    names2.find("Xs");           // 返回一个 pair<string, string> 迭代器
+                                 // 如果没有找到，返回 names2.end()
+
+    // 查找是否有键
+    if (names2.find("Lyj") == names2.end())
+        ;  // 空
+    if (names2.count("Lyj") == 0)
+        ;
+
+    // 使用迭代器修改
+    (*names2.find("Qhn")).second = "Super Super Sb";
+    names2.find("Qhn")->second   = "Super Super Sb";
+
+    // 插入
+    names2["Lyj"] = "Super Sb";  // 如果没有访问到，默认创建一个新的
+    names2.insert({"Lyj", "Super Sb"});
+
+    // 删除
+    // 1. 查找
+    auto qhn = names2.find("Qhn");
+    // 2. 删除
+    names2.erase(qhn);
+
+    return 0;
+}
+```
+
+### 0.3.3 C++ 风格的循环
+
+```cpp
+#include <algorithm>
+#include <iostream>
+#include <map>
+#include <pair>
+#include <string>
+#include <unordered_map>
+
+using namespace std;
+
+int main()
+{
+    vector<int> vec{1, 2, 3, 4, 5};
+
+    // C 写法
+    for (int i = 0; i < vec.size(), i += 1)
+    {
+        cout << vec[i] << " ";
+    }
+
+    // C++ 写法: 1998
+    for (auto iter = vec.begin(); iter != vec.end(); iter++)
+    {
+        int curr = *iter;
+        cout << curr << " ";
+    }
+
+    // C++ 写法: 2011, 遍历全部
+    for (auto curr : vec)
+    {
+        cout << curr << " ";
+    }
+
+    // unordered_map
+    map<string, string> names2({{"Qhn", "Sb"}, {"Xs", "Shuai"}});
+
+    for (auto it = names2.begin(); it != names2.end(); it++)
+    {
+        cout << it->first << " " << it->second;
+    }
+
+    for (auto curr : names2)
+    {
+        cout << curr.first << " " << curr.second;
+    }
+
+    return 0;
+}
+```
+
+---
+
+### 0.3.4 容器适配器 （栈 stack ，队列 queue ）
+
+```cpp
+#include <iostream>
+#include <stack>
+#include <queue>
+#include <deque>
+
+using namespace std;
+
+int main()
+{
+    // 创建
+    stack<int> st({1, 2, 3, 4, 5});
+    queue<int> que({1, 2, 3, 4, 5});
+
+    // 查询是否为空
+    bool is_st = st.empty();
+    bool is_que = que.empty();
+
+    // 不可遍历
+
+    // 栈：读取栈顶元素
+    int elem = st.top();
+
+    // 队列：读取队首队尾元素
+    int elem2 = que.front();
+    int elem3 = que.back();
+
+    // 栈：弹出栈顶元素
+    st.pop();
+
+    // 栈：压入元素
+    st.push(6);
+
+    // 双端队列
+    deque<int> deq;
+
+    // 队列：读取队首队尾元素
+    int elem4 = deq.front();
+    int elem5 = deq.back();
+
+    deq.push_back(6);
+    deq.push_front(0);
+
+    deq.pop_back();
+    deq.pop_front();
+}
+```
+
+### 0.4 C++ 输入输出
+
+```cpp
+#include <iostream>
+#include <vector>
+
+using namespace std;
+
+int main()
+{
+    // 输入一个数组
+    // 第一行： n, 表示有 n 个元素
+    // 第二话： 数组内容
+    int n;
+    cin >> n;
+
+    vector<int> nums;
+    // 循环 n 次后，n 减到 0， false 退出循环
+    while (n--)
+    {
+        int elem;
+        cin >> elem;
+        nums.push_back(elem);
+    }
+
+    // 输出这个数组
+    for (auto num: nums)
+    {
+        cout << num << " ";
+    }
+    cout << endl;
+
+    return 0;
+}
+```
+
+```cpp
+#include <iostream>
+#include <sstream>
+#include <vector>
+
+using namespace std;
+
+int main()
+{
+    // 输入一个数组
+    // 数组内容
+    // 作为字符串读入
+    string line;    // 一整行，没分割 "1 2 3 4 5"
+    getline(cin, line);
+
+    // 通过一个已有的字符串创建一个字符串流
+    stringstream strin(line);   // 流，和 cin 一样空格分隔
+
+    vector<int> nums;
+    // 从字符串中读数据
+    while (true)
+    {
+        string elem;
+        strin >> elem;
+        // 如果读入完成，字符串会为空，因为内容全部读完了
+        if (elem.empty())
+        {
+            break;
+        }
+        else
+        {
+            // 字符串转成整数，加入数组
+            nums.push_back(stoi(elem));
+        }
+    }
+
+    // 输出这个数组
+    for (auto num: nums)
+    {
+        cout << num << " ";
+    }
+    cout << endl;
+
+    return 0;
+}
+```
+
+装逼版
+
+```
+#include <iostream>
+#include <sstream>
+#include <iterator>
+#include <vector>
+
+using namespace std;
+
+int main()
+{
+    string line;
+    getline(cin, line);
+
+    istringstream iss(line);
+
+    // 准备好容器接收元素
+    vector<int> nums;
+
+    // 将 输入流 转换为 输入流迭代器
+    // 循环，将每个迭代器的元素 复制到 准备好的容器中
+    // copy(first, last, dest) ： [first, last) 元素依序复制到 dest 迭代器的位置里
+    // back_inserter(容器) ：提供一个迭代器，相当于对容器每次调用一下 push_back
+    
+    // copy(first, last, back_inserter(nums))
+
+    // istream_iterator<元素类型>(输入流) 输入流迭代器，表示一个输入流的开始位置，并依次 **消费** 里面的元素
+    // 一个空的输入流迭代器作为 结尾 的标记
+    copy(istream_iterator<int>(iss),
+         istream_iterator<int>(),
+         back_inserter(nums));
+
+    // ostream_iterator<元素类型>(输出流，分隔符 ** string ** )
+    copy(nums.begin(), nums.end(),
+         ostream_iterator<int>(cout, ","));
+    return 0;
+}
+```
