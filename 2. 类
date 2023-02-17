@@ -1,0 +1,247 @@
+# 2. 类
+
+C 中以函数指针作为成员
+
+```cpp
+#include <iostream>
+#include <iterator>
+#include <sstream>
+#include <vector>
+
+using namespace std;
+
+struct Complex
+{
+    float re;
+    float im;
+
+    // 函数指针，绑定函数与结构体
+    void (*norm)(Complex*);
+};
+
+void norm(Complex* c)
+{
+     // return ....;
+}
+
+int main()
+{
+    // 传入相同的函数指针
+    Complex c1 = {1, 1, norm};
+    Complex c2 = {2, 2, norm};
+    // 传入变量的地址，但是变量本身就是调用者
+    c1.norm(&c1);
+    c2.norm(&c2);
+}
+```
+
+对应的 C++
+
+```cpp
+#include <iostream>
+#include <iterator>
+#include <sstream>
+#include <vector>
+#include <cmath>
+
+using namespace std;
+
+struct Complex
+{
+    float re;
+    float im;
+
+    // 函数指针，绑定函数与结构体
+    float (*norm)(Complex*);
+};
+
+class ComplexCpp
+{
+public:
+    // 成员变量，和 C 结构体成员是类似的
+    float re;
+    float im;
+    // 成员函数，有一个默认参数： ComplexCpp*
+    // 在调用的时候，编译器会把调用者的地址传入，并命名为 **this**
+    float norm() {
+        // this->re;   // 访问调用者变量的成员值
+        // re; // 直接写名字就行，默认访问 this->re
+        return sqrt(re * re + im * im);
+    }
+};
+
+float norm(Complex* c)
+{
+    return sqrt(c->re * c->re + c->im * c->im);
+}
+
+int main()
+{
+    // 传入相同的函数指针
+    Complex c1 = {1, 1, norm};
+    Complex c2 = {2, 2, norm};
+    // 传入变量的地址，但是变量本身就是调用者
+    float norm1 = c1.norm(&c1);
+    float norm2 = c2.norm(&c2);
+
+    // C++ 用类的写法
+    ComplexCpp cp1 = {1, 1};
+    float normcp1 = cp1.norm();
+}
+```
+
+C++ 在 C 语言的基础上增加了面向对象编程，C++ 支持面向对象程序设计。类是 C++ 的核心特性，通常被称为用户定义的类型。
+
+类用于指定对象的形式，它包含了数据表示法和用于处理数据的方法。类中的数据和方法称为类的成员。函数在一个类中被称为类的成员。
+
+## C++ 类定义
+
+定义一个类，本质上是定义一个数据类型的蓝图。这实际上并没有定义任何数据，但它定义了类的名称意味着什么，也就是说，它定义了类的对象包括了什么，以及可以在这个对象上执行哪些操作。
+
+## 定义 C++ 对象
+
+类提供了对象的蓝图，所以基本上，对象是根据类来创建的。声明类的对象，就像声明基本类型的变量一样。
+
+## 变量的可见性
+
+数据封装是面向对象编程的一个重要特点，它防止函数直接访问类类型的内部成员。类成员的访问限制是通过在类主体内部对各个区域标记 **public、private、protected** 来指定的。关键字 **public、private、protected** 称为访问修饰符。
+
+一个类可以有多个 public、protected 或 private 标记区域。每个标记区域在下一个标记区域开始之前或者在遇到类主体结束右括号之前都是有效的。成员和类的默认访问修饰符是 private。
+
+## 继承
+
+```cpp
+#include <cmath>
+#include <iostream>
+#include <iterator>
+#include <sstream>
+#include <vector>
+
+using namespace std;
+
+class Human
+{
+public:
+    string name;
+    bool   gender;
+    void talk();
+};
+
+// 学生是一个人，所以他应该有 人 这个类的成员。但是为什么要手动添加呢。
+// class Student
+// {
+// public:
+//     string name;
+//     bool   gender;
+//     string school_name;
+// };
+
+// 告诉编译器：学生 **是一个** 人，编译器会把 人 这个类的成员自动替你加进去
+// is-a 关系
+class Student : public Human
+{
+public:
+    string school_name;
+};
+
+int main() 
+{
+    Student s1;
+    s1.talk();
+}
+```
+
+基类 Base 派生类 Derive
+
+## 继承类型
+
+当一个类派生自基类，该基类可以被继承为 **public、protected** 或 **private** 几种类型。继承类型是通过上面讲解的访问修饰符 access-specifier 来指定的。
+
+我们几乎不使用 **protected** 或 **private** 继承，通常使用 **public** 继承。当使用不同类型的继承时，遵循以下几个规则：
+
+- **公有继承（public）：**当一个类派生自**公有**基类时，基类的**公有**成员也是派生类的**公有**成员，基类的**保护**成员也是派生类的**保护**成员，基类的**私有**成员不能直接被派生类访问，但是可以通过调用基类的**公有**和**保护**成员来访问。
+- **保护继承（protected）：** 当一个类派生自**保护**基类时，基类的**公有**和**保护**成员将成为派生类的**保护**成员。
+- **私有继承（private）：**当一个类派生自**私有**基类时，基类的**公有**和**保护**成员将成为派生类的**私有**成员
+
+## 构造函数与析构函数
+
+构造函数：实例创建时做一些事情
+
+析构函数：实例销毁的时候做一些事情
+
+```cpp
+#include <cmath>
+#include <iostream>
+#include <iterator>
+#include <sstream>
+#include <vector>
+#include <stdio.h>
+#include <stdlib.h>
+
+using namespace std;
+
+void foo()
+{
+    FILE* fp = fopen("1.txt");
+
+    // fclose(fp);
+}
+
+int main() 
+{
+    foo();
+    //  忘记释放了，这里文件依旧处于打开状态！
+    // fp 的生命周期已经结束了。如果 fp 死掉的时候顺手关掉文件的话。。。
+}
+```
+
+```cpp
+#include <cmath>
+#include <iostream>
+#include <iterator>
+#include <sstream>
+#include <stdio.h>
+#include <stdlib.h>
+#include <vector>
+
+using namespace std;
+
+class File
+{
+    // 封装性：我可以申请，你不能直接用
+private:
+    FILE* fp;
+
+public:
+    // 构造函数：没有返回类型，函数名称和类名一样
+    File(const char* file_name)
+    {
+        fp = fopen(file_name, "rb");
+    };
+    // 析构函数：没有返回类型，函数名称是类名前面加 ~
+    ~File()
+    {
+        fclose(fp);
+    };
+};
+
+void foo()
+{
+    // 创建的时候，调用构造函数，打开指定文件
+    File file("1.txt");
+    // ......
+    // 这里不需要再手动释放了，析构函数会做这件事
+
+    // 文件资源的生命周期和管理他的变量一致了。
+    // 广义的资源都可以用这种方式与一个变量共享生命周期
+    // RAII 资源获取即初始化
+}
+
+int main()
+{
+    foo();
+    // 这里文件已经关掉了
+}
+```
+
+默认构造函数和析构函数
