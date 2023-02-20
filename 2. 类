@@ -245,3 +245,406 @@ int main()
 ```
 
 默认构造函数和析构函数
+
+```cpp
+#include <cmath>
+#include <iostream>
+#include <iterator>
+#include <sstream>
+#include <stdio.h>
+#include <stdlib.h>
+#include <vector>
+
+using namespace std;
+
+class Student
+{
+public:
+    string name;
+    int    id;
+
+    Student() = default;
+    ~Student() = default;
+};
+
+int main()
+{
+    Student qhn;
+		// auto lyj = Student();
+
+    // 直接访问构造函数
+    // 属于类的函数，访问方式是 类名::函数名
+    // Student zjy = Student::Student();
+
+    // 直接访问析构函数
+    // qhn.~Student();
+
+    return 0;
+}
+```
+
+### 重载和重写
+
+重载（Overload）是一个类中多态性的一种表现。如果在一个类中定义了多个同名的方法，它们参数列表不同，则称为方法的重载(Overload)
+
+**区别：**重载实现于一个类中;重写实现于子类中。
+
+重载(Overload)：是一个类中多态性的一种表现，指同一个类中不同的函数使用**相同的函数名**，但是**函数的参数个数或类型不同**。可以有**不同的返回类型**;可以有不同的访问修饰符;可以抛出不同的异常。调用的时候根据函数的参数来区别不同的函数。
+
+当您调用一个**重载函数**或**重载运算符**时，编译器通过把您所使用的参数类型与定义中的参数类型进行比较，决定选用最合适的定义。选择最合适的重载函数或重载运算符的过程，称为**重载决策**。
+
+[重载决议 - cppreference.com](https://zh.cppreference.com/w/cpp/language/overload_resolution)
+
+1.完美匹配。参数就是表达式的类型，或者是表达啊是类型的引用(也可以加上const 或 volatile的限定符).
+
+2.通过微小的调整来匹配。距离，包括一个数组变量退化为一个指向其首元素的指针或者添加const使实参类型int** 来匹配形参类型int const* const*
+
+3.通过类型提升来匹配。类型提升是一种隐式转换，包括从小的整数类型(例如bool,char,short,有时包括枚举类型)转换为int,unsigned int, long, unsigned long类型，以及float转换为double
+
+4.仅通过标准转换来匹配。这包括任意种类的标准转换(例如int转为float)或者从继承类转换为一个公用的(public)，明确的基类，但是要排除对类型转换运算符和转换构造函数的隐式调用。
+
+5.通过用户定义的转换来匹配。这允许任意种类的隐式转换。
+
+6.通过省略号来匹配(...)。省略号形参几乎可以匹配任意类型。不过，存在一个例外，拥有非平凡的拷贝构造函数(nontrivial copy constructor)的类类型不一定是有效的(具体实现可以自由的允许或禁止这种匹配).
+
+```cpp
+#include <cmath>
+#include <iostream>
+#include <iterator>
+#include <sstream>
+#include <stdio.h>
+#include <stdlib.h>
+#include <vector>
+
+using namespace std;
+
+// 重载发生在同一个作用域中
+// C 不允许函数重名，每一个类型都要写一个新名字
+bool icmp(int a, int b) {
+    return a < b;
+}
+bool fcmp(float a, float b) {
+    return a < b;
+}
+
+class B {
+
+};
+
+class C{
+
+};
+
+class A {
+public:
+    void fn();
+    void fn(int a);
+    operator B (){
+        return B{};
+    }
+};
+
+// C++ 通过重载，允许使用同一个函数名
+// 重载的函数，函数入参类型/个数必须有区别，不可以重载返回值类型不同但是入参相同的函数
+bool cmp(int a, int b = 0) {
+    return a < b;
+}
+bool cmp(float a, float b) {
+    return a < b;
+}
+bool cmp(double a, double b) {
+    return a < b;
+}
+// 简化为泛型函数
+template <typename T>
+bool cmp(T a, T b) {
+    return a < b;
+}
+
+void fn(int);
+void fn(float);
+void fn(int*);
+void fn(std::string);
+void fn(B);
+template <typename T>
+void fn(T); // 定义了 void fn<T>(T t)
+void fn(...);
+
+std::vector<int> v;
+
+template <typename T>
+class Vec{}; // 定义了 Vec<T>
+// 特化
+Vec<int> vv;
+
+int main() 
+{
+    // 重载的函数在调用时，通过入参的不同来选取相应的函数
+    // 这个步骤叫重载决议
+    bool b1 = cmp(1); // 调用到 bool cmp(int, int)
+    bool b2 = cmp(1.1, 2.2); // 调用到 bool cmp(double, double)
+    bool b1_5 = cmp(1.1f, 2.2f); // 调用到 bool cmp(float, float)
+    // bool b3 = cmp("hello", "world");
+
+    // 完美匹配
+    fn(1);
+    // 微小调整匹配
+    int a[10];
+    fn(a);
+    // 类型提升匹配 小整数->大整数，float->double，整数->浮点
+    fn((char)1);
+
+    A aa;
+    // 用户定义转换匹配
+    fn(aa);
+
+    // 泛型函数匹配
+    C c;
+    fn(c);
+
+    // 省略号任意匹配
+    fn(c, c);
+}
+```
+
+## C++ 中的运算符重载
+
+您可以重定义或重载大部分 C++ 内置的运算符。这样，您就能使用自定义类型的运算符。
+
+重载的运算符是带有特殊名称的函数，函数名是由关键字 operator 和其后要重载的运算符符号构成的。与其他函数一样，重载运算符有一个返回类型和一个参数列表。
+
+```cpp
+#include <cmath>
+#include <iostream>
+#include <iterator>
+#include <sstream>
+#include <stdio.h>
+#include <stdlib.h>
+#include <vector>
+
+using namespace std;
+
+// 运算符重载: 参数数目必须符合运算符本身的规定
+// 为你自己定义的类实现运算符的工作逻辑
+// 实现了对应的运算符以后，就可以像书写基本类型的操作一样，直接用运算符操作你的类示例
+// 典型例子： std::string 可以用 + 号直接相加得到一个新字符串
+// 形式： 返回值 operator 运算符 (形式参数) { 函数体 }
+template <typename T>
+class Complex
+{
+private:
+    T re;
+    T im;
+
+public:
+    // 实现比较相等的逻辑
+    // 1. 在类内直接实现
+    bool operator==(Complex<T> other)
+    {
+        return this->re == other.re && this->im == other.im;
+    }
+
+    // 3. 自增自减如何区分前置和后置？强制区分
+    Complex operator++()
+    {
+        // 后置
+    }
+    Complex operator++(int)
+    {
+        // 前置，强行加了一个没吊用的 int
+    }
+};
+
+// 2. 直接用普通的函数重载去匹配，不是用类的方法重载去匹配
+template <typename T>
+bool operator!=(Complex<T> lhs, Complex<T> rhs)
+{
+    return !(lhs == rhs);
+}
+
+template <typename T>
+bool operator<(Complex<T> lhs, Complex<T> rhs)
+{
+    // 你要自己保证运算符的运算逻辑是合法的
+    // 否则代码会很奇怪
+    return true;
+}
+
+template <typename T>
+class Vec
+{
+public:
+    // 取下标
+    T operator[](std::size_t i)
+    {
+        return data[i];
+    }
+
+private:
+    T*          data;
+    std::size_t size;
+};
+
+// 指针的壳子
+// 应该也有指针的行为，比如 * 可以去取地址对应的内容
+template <typename T>
+class Ptr
+{
+public:
+    // 取内容（解引用）
+    // 外部操作：取地址对应的内容
+    // 转发到内部实际的指针上，并返回取内部实际指针的结果
+    T operator*()
+    {
+        return *data;
+    }
+
+    // 外部操作：把指针加一
+    // 转发到内部：1. 把内部指针加一 2. 返回加一后的内部指针
+    T* operator++()
+    {
+        data++;
+        return data;
+    }
+
+    // 成员访问操作是固定的
+    T* operator->()
+    {
+        return data;
+    }
+
+private:
+    T* data;
+};
+
+struct S
+{
+    int a;
+}
+
+int main()
+{
+    Complex<int> a, b;
+    if (a == b) {}  // if (Complex<int>::operator==(&a, b))
+    if (a != b) {}  // if (operator!=<int>(a, b))
+    if (a < b) {}
+    a++;  // 调用后置
+    ++b;  // 调用前置
+
+    Vec<int> v;
+    v[0];  // Vec<int>::operator(&v, 0)
+
+    int*     p;
+    Ptr<int> pi;
+    int      i = *p, j = *pi;
+
+    Ptr<S> ps;
+    int    k = ps->a;  // (Ptr<S>::operator->(&ps))->a == (S*)->a
+}
+```
+
+**仿函数由来**
+
+我们都知道，函数的入参除了是普通变量之外，还可以是函数指针（C 语言中就经常这么用）。那有没有什么手段能代替函数指针呢？答案是有。
+
+- **定义一个类，类里面定义了某个方法，将该类的对象作为函数的入参，那么在函数中就能调用这个类中的方法**
+
+还有更简单的方法吗？答案还是有。
+
+- **定义一个类，类里面重载函数运算符（），将该类的对象作为函数的入参，那么在函数中同样能调用重载符（）里面的方法**
+
+**所以说，仿函数就是仿造的函数，它并不是一个真正意义上的函数。它是一个类中的运算符（）重载，但它具有函数的功能。**
+
+```cpp
+#include <cmath>
+#include <iostream>
+#include <iterator>
+#include <sstream>
+#include <stdio.h>
+#include <stdlib.h>
+#include <vector>
+
+using namespace std;
+
+// 可调用对象：指可以后接 `(实际参数)` 并有返回的对象
+// 比如函数 fn，接受参数，给一个返回值，是可调用
+// 调用符号 (...) 本身也是个运算符，所以可以重载
+// 导致：C++的类示例可以像个函数一样调用！我们称之为仿函数
+class Max
+{
+public:
+    // 希望它可以像个函数一样工作： Max<int>(1, 2) 返回 2
+    // 第一个小括号是运算符名，第二个才是参数列表
+    template <typename T>
+    T operator()(T a, T b)
+    {
+        return std::max<T>(a, b);
+    }
+};
+
+// 仿函数可以访问类内的成员，这是函数指针做不到的
+// 仿函数类
+class MinInt
+{
+private:
+    // 外部传入的值，不影响函数逻辑的书写
+    int some;
+
+public:
+    // 只负责传入
+    MinInt(int some)
+    {
+        this->some = some;
+    }
+
+    int operator()(int a, int b)
+    {
+        // 使用外部 **捕获** 的值，不需要关心来源，只要用就好
+        return std::min(a, b) + some;
+    }
+};
+
+template <typename T>
+T fn1(T a, T b)
+{
+    return std::max<T>(a, b);
+}
+
+// int: fn1_int_int 类型是函数指针 int (*)(int int)
+// double: fn1_double_double 类型是函数指针 double (*)(double, double)
+// 在 C 里面，传递函数指针的时候，为了使类型相同，只能强转成 void*
+
+template <typename T>
+void print_max(T a, T b, Max cmp)
+{
+    cout << Max()(a, b) << endl;
+}
+
+int main()
+{
+    // 将仿函数视为函数
+
+    auto fn2 = Max();  // 仿函数先创建对象，再调用
+
+    fn1(a, b);  // fn1 位于代码段，是一段实际的二进制代码，是可执行文件的一部分。
+    fn2(a, b);  // fn2 在运行之后创建，存在内存里。
+
+    auto c = Max()(a, b);  // 第一个括号构造了一个临时的可调用对象
+                           // 是调用了类的构造函数创建了一个对象
+                           // 第二个括号才是调用的实际参数列表，才是运算符
+
+    // 将仿函数对象视为一个普通的对象
+    auto min_and_add_1 = MinInt(1);
+    auto min_and_add_2 = MinInt(2);
+
+    // 再将这个对象视为函数
+    min_and_add_1(1, 2); // 1 + 1 = 2
+    min_and_add_2(1, 2); // 1 + 2 = 3
+
+    // 合并之后就是常见的仿函数简写
+    int d = MinInt(1)(1, 2);
+    int e = MinInt(2)(1, 2);
+}
+```
+
+### lambda 表达式
