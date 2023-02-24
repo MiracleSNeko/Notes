@@ -1,5 +1,4 @@
 # 2. 类
-
 C 中以函数指针作为成员
 
 ```cpp
@@ -648,3 +647,509 @@ int main()
 ```
 
 ### lambda 表达式
+
+```cpp
+#include <algorithm>
+#include <cmath>
+#include <iostream>
+#include <iterator>
+#include <sstream>
+#include <stdio.h>
+#include <stdlib.h>
+#include <vector>
+
+using namespace std;
+
+// 假设有如下实际业务场景
+// 控制台读入一个数组，并读入一个数，计算能整除这个数的元素有多少个
+// 但是要求使用 std::count_if 去实现
+
+bool p1(int elem, int target)
+{
+    return elem % target == 0;
+}
+
+class p2
+{
+public:
+    bool operator()(int elem, int target)
+    {
+        return elem % target == 0;
+    }
+};
+
+// 现在希望 target 不要出现在函数签名里
+// 函数签名里只有容器里的元素 elem
+class p3
+{
+private:
+    int target;
+
+public:
+    p3(int target)
+    {
+        this->target = target;
+    }
+
+    bool operator()(int elem)
+    {
+        return elem % target == 0;
+    }
+};
+
+// 返回类型后置语法 C++ 11
+int  fn();
+auto fn() -> int;
+
+int main()
+{
+    std::vector<int> nums;
+    int              target;
+
+    std::string line;
+    std::getline(cin, line);
+    std::istringstream iss(line);
+    std::copy(std::istream_iterator<int>(iss), std::istream_iterator<int>(),
+              std::back_inserter(nums));
+    std::cin >> target;
+
+    // // 普通函数
+    // std::cout << std::count_if(std::begin(nums), std::end(nums), p1)
+    //           << std::endl;
+    // // 仿函数对象
+    // std::cout << std::count_if(std::begin(nums), std::end(nums), p2())
+    //           << std::endl;
+    // 因为 count_if 要求使用一元谓词，参数只能有一个，没法在参数列表里传 target
+    // 进去 所以只能在 **创建仿函数对象** 的时候传值 => 捕获！
+    std::cout << std::count_if(std::begin(nums), std::end(nums), p3(target))
+              << std::endl;
+
+    // C++ 11
+    // Lambda 表达式：一个由 **编译器创建** 的带捕获的仿函数 **对象**
+    // 告诉编译器：入参是啥，函数体是啥，返回类型是啥 -> 创建 operator()
+    // 告诉编译器：捕获是啥 -> 创建私有的成员
+    // auto lambda对象 = [捕获成员](参数列表) -> 返回类型 { 函数体 };
+    // 编译器会按照上面的格式，给每一个 lambda 语句创造一个 **独立的**
+    // 仿函数类，并实例化一个对象赋值给等号左侧
+    auto p4 = [target](int elem) -> bool { return elem % target == 0; };
+    std::cout << std::count_if(std::begin(nums), std::end(nums), p4)
+              << std::endl;
+    std::cout << std::count_if(
+                     std::begin(nums), std::end(nums),
+                     [target](int elem) -> bool { return elem % target == 0; })
+              << std::endl;
+}
+```
+
+```cpp
+#include <algorithm>
+#include <cmath>
+#include <iostream>
+#include <iterator>
+#include <map>
+#include <sstream>
+#include <stdio.h>
+#include <stdlib.h>
+#include <vector>
+
+using namespace std;
+
+class A
+{
+public:
+    static auto create_fn(int target)
+    {
+        // lambda 对象可以像正常对象一样返回。仿函数对象也是。
+        // 返回 lambda 的函数本身是 **创造函数的函数**
+        // return [target](int elem) { return elem % target == 0; };
+        // & 按引用捕获。记住，这里的 target 在函数内可以被修改。因为是个引用。
+        return [&](int elem) { return elem % target == 0; };
+    }
+
+    int target;
+
+    auto create_fn()
+    {
+        // 类内的 lambda 捕获 this 指针后可以直接使用成员变量和成员函数
+        // return [this](int elem) { return elem % target == 0; };
+        // = 表示按值捕获，但是切记，这里按值被捕获的是 this 指针
+        // 为了安全起见，如果确实要使用到成员和方法，必须显式捕获 this
+        return [=](int elem) { return elem % target == 0; };
+    }
+};
+
+// lambda 表达式可以立即调用
+// 这个函数调用在进入 main 之前就已经执行
+const auto a = []() { return 1; }();
+
+int main()
+{
+    std::vector<std::vector<int>>
+        matrix;  // m 行 n 列，假设每行第一个元素，第二个元素没有重复对
+
+    // ... 填充了元素
+    // 假设按照每行第一个元素升序，第二个元素降序排序
+    std::sort(matrix.begin(), matrix.end(),
+              [](const std::vector<int>& lhs, const std::vector<int>& rhs) {
+                  //[](const auto& lhs, const auto& rhs)
+                  return lhs[0] == rhs[0] ? lhs[1] > rhs[1] : lhs[0] < rhs[0];
+              });
+}
+```
+
+### 多态，虚函数
+
+多态的定义：
+
+**多态**按字面的意思就是多种形态。当类之间存在层次结构，并且类之间是通过继承关联时，就会用到多态。
+
+C++ 多态意味着调用成员函数时，会根据调用函数的对象的类型来执行不同的函数。
+
+```cpp
+#include <algorithm>
+#include <cmath>
+#include <iostream>
+#include <iterator>
+#include <map>
+#include <sstream>
+#include <stdio.h>
+#include <stdlib.h>
+#include <vector>
+
+using namespace std;
+
+// 错误实现
+// p (4 byte) | int a |
+class Base
+{
+public:
+    int  a;
+    void fun1();
+};
+
+// pb (4 byte) | int a | int b |
+class Derive1 : public Base
+{
+public:
+    int  b;
+    void fun1();
+};
+
+// pb (4 byte) | int a | int c |
+class Derive2 : public Base
+{
+public:
+    int  c;
+    void fun1();
+};
+
+// 在运行期区分调用 Derive1 或者 Derive2 的 fun1
+// 通过传入基类指针，函数可以实际上接收两种不同的派生类对象
+// 然后根据实际上派生类的不同，调用到不同的函数
+void fun2(Base* pb)
+{
+    pb->fun1();  // 实际上，调用的还是 Base::fun1 !!!!!
+                 // 因为 pb 的类型是 Base，实际调用是 Base::fun1(pb)
+}
+
+int main()
+{
+    char c;
+    std::cin >> c;
+
+    // c == '1' -> Derive1
+    if (c == '1')
+    {
+        fun2(new Derive1());
+    }
+    // c == '2' -> Derive2
+    if (c == '2')
+    {
+        fun2(new Derive2());
+    }
+    return 0;
+}
+```
+
+导致错误输出的原因是，调用函数被编译器设置为基类中的版本，这就是所谓的**静态多态**，或**静态链接。** 函数调用在程序执行前就准备好了。有时候这也被称为**早绑定**，因为 area() 函数在程序编译期间就已经设置好了。
+
+虚函数：
+
+**虚函数** 是在基类中使用关键字 **virtual** 声明的函数。在派生类中重新定义基类中定义的虚函数时，会告诉编译器不要静态链接到该函数。
+
+我们想要的是在程序中任意点可以根据所调用的对象类型来选择调用的函数，这种操作被称为**动态链接**，或**后期绑定**。
+
+```cpp
+#include <algorithm>
+#include <cmath>
+#include <iostream>
+#include <iterator>
+#include <map>
+#include <sstream>
+#include <stdio.h>
+#include <stdlib.h>
+#include <vector>
+
+using namespace std;
+
+// p (12 byte) : | int a | function table |
+// function table : | &Base::fun1() |
+// 运行时通过查找函数表的方式去调用函数，而不是通过编译期的类型去直接调用，是否就可以实现我们想要的？
+// 如果保证派生类的 function table 里面存放的实际上是派生类 **自己的**
+// 函数，就可以实现。 这个 function table 起名叫虚函数表 vtbl
+class Base
+{
+public:
+    int          a;
+    virtual void fun1();  // 虚函数，基类的必须手动标识为虚
+
+    // 如果希望派生类必须手动重写一个函数，否则就报错
+    // 那么需要在基类里将其定义为 **纯虚函数**
+    virtual void fun3() = 0;
+};
+
+// pb (16 byte) | int a | function table | int b |
+// function table : | &Derive1::fun1() |
+class Derive1 : public Base
+{
+public:
+    int b;
+    virtual void fun1() override final;  // 派生类虚函数可以不写 virtual。建议手动写
+                                    // 派生类重写的虚函数可以手动标注为 override
+                                    // 如果希望该函数不再被其派生类重写，可以标注为 final
+    virtual void fun3() override;
+};
+
+// pb (4 byte) | int a | function table | int c |
+class Derive2 : public Base
+{
+public:
+    int  c;
+    virtual void fun1() override final;
+    virtual void fun3() override;
+};
+
+// 在运行期区分调用 Derive1 或者 Derive2 的 fun1
+// 通过传入基类指针，函数可以实际上接收两种不同的派生类对象
+// 然后根据实际上派生类的不同，调用到不同的函数
+void fun2(Base* pb)
+{
+    pb->fun1();  // pb->vtbl[0]();
+}
+
+int main()
+{
+    char c;
+    std::cin >> c;
+
+    // c == '1' -> Derive1
+    if (c == '1')
+    {
+        fun2(new Derive1());
+    }
+    // c == '2' -> Derive2
+    if (c == '2')
+    {
+        fun2(new Derive2());
+    }
+    return 0;
+}
+```
+
+您可能想要在基类中定义虚函数，以便在派生类中重新定义该函数更好地适用于对象，但是您在基类中又不能对虚函数给出有意义的实现，这个时候就会用到纯虚函数。
+
+```cpp
+#include <algorithm>
+#include <cmath>
+#include <iostream>
+#include <iterator>
+#include <map>
+#include <sstream>
+#include <stdio.h>
+#include <stdlib.h>
+#include <vector>
+
+using namespace std;
+
+class Base {};
+
+class Derive1: public Base {};
+
+class Derive2: public Base {};
+
+class Derive3: public Base {};
+
+int main()
+{
+    // 输入一组数，比如 1 2 3 3 2 1
+    // 创建对应的派生类对象，并存入同一个数组
+
+    // .. 假设做了输入
+    std::vector<int> input;
+
+    // 储存器
+    std::vector<Base*> container;
+
+    for (auto i: input)
+    {
+        Base* pb;
+        if (i == 1) { pb = new Derive1(); }
+        if (i == 2) { pb = new Derive2(); }
+        if (i == 3) { pb = new Derive3(); }
+        container.push_back(pb);
+    }
+}
+```
+
+接口：一般只含有纯虚函数的类。作用：类型筛选
+
+```cpp
+#include <bits/stdc++.h>
+
+using namespace std;
+
+// 定义可以发声的东西叫动物
+// 将不同的动物存在同一个容器里
+// 含有纯虚函数的类叫抽象类/接口（类），它只规定类的行为（方法），而不提供实现
+// 工程实践中，一般抽象类 **只含有纯虚函数**
+class IAnimal  // I： interface 接口
+{
+public:
+    // 接口：描述了函数的参数，返回值等，但是不给出实现
+    virtual void talk() = 0;
+};
+
+class IKun
+{
+public:
+    virtual void chicken() = 0;
+};
+
+class Dog : public IAnimal
+{
+public:
+    virtual void talk() override final{};
+};
+
+class Cat : public IAnimal
+{
+public:
+    virtual void talk() override final{};
+};
+
+class Human : public IAnimal, public IKun
+{
+public:
+    std::string  name;
+    virtual void talk() override{};
+};
+
+// 实际业务场景里，要求函数入参是一个实现了 IAnimal 接口的类型
+void fun1(IAnimal* animal) {} // 可以传入 Dog Cat Human 三种对象
+void fun2(IKun* ikun) {} // 只能传入 Human
+
+int main()
+{
+    std::vector<IAnimal*> animals;
+    // ......
+    return 0;
+}
+```
+
+一个使用虚基类的业务模拟
+
+```cpp
+#include <bits/stdc++.h>
+
+using namespace std;
+
+template <typename T>
+class IIterable
+{
+public:
+    virtual T next() = 0;
+};
+
+template <typename T>
+class Vec : public IIterable<T>
+{
+public:
+    virtual T next() override
+    {
+        // 实际上应为：返回当前索引的值，内部的索引加一
+        return T{};
+    }
+};
+
+template <typename T>
+class List : public IIterable<T>
+{
+    virtual T next() override
+    {
+        // 实际上应为：返回当前指针指向的值，指针向前一位
+        return T{};
+    }
+};
+
+template <typename Key, typename Value>
+class HashTable
+{
+};
+
+// 实际业务函数：用迭代器遍历，打印容器内所有值
+template <typename T>
+void printall(IIterable<T>* container)  // 可以传入顺序容器 Vec
+                                        // List，不可以传入无序的 HashTable
+{
+    // 使用 next 方法访问容器元素
+}
+
+int main() {}
+```
+
+虚继承：消除菱形继承的冗余
+
+为了解决多继承时的命名冲突和冗余数据问题，[C++](http://c.biancheng.net/cplus/) 提出了虚继承，使得在派生类中只保留一份间接基类的成员。
+
+```cpp
+#include <bits/stdc++.h>
+
+#pragma align(1)
+
+using namespace std;
+
+class Base1
+{
+public:
+    int x;
+};
+
+// vbptr
+
+class Derive1 : virtual public Base1
+{
+public:
+    int y;
+};
+
+class Derive2 : virtual public Base1
+{
+public:
+    int z;
+};
+
+class Child : public Derive1, public Derive2
+{
+public:
+    int w;
+};
+// clang:
+// Child: | vptr 1 | int y | vptr 2 | int z | int w | int x |
+	//                                                ^ vbptr1, vbptr2
+
+int main() {
+    Child c;
+}
+```
+
+实际的内存布局与编译器相关。
