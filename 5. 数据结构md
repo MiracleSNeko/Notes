@@ -1,0 +1,303 @@
+### vector
+
+- 动态大小的数组
+- 连续储存空间
+- 元素扩容
+    - 如果剩余空间足够安放新插入的元素，不会触发扩容
+    - 如果剩余空间不足安放新插入的元素，首先申请一块新的足够大的内存空间，然后复制原内存中的数据到新内存中，然后在新内存的末尾插入元素，最后析构并释放原内容
+- 元素删除
+    - 传入一个迭代器表示位置，或两个迭代器表示范围
+    - 删除元素后，后面的元素会往前拷贝
+
+```cpp
+// 迭代器失效问题
+#include <bits/stdc++.h>
+
+int main()
+{
+    std::vector<int> vec{1, 2, 3, 4, 5};
+
+    auto it4 = vec.end() - 2;
+    std::cout << *it4 << std::endl;
+
+    auto it3 = std::find(vec.begin(), vec.end(), 3);
+    vec.erase(it3 - 1, it3);
+
+    std::cout << *it4 << std::endl;
+    return 0;
+}
+```
+
+迭代器失效问题的本质：你在持有一个**对原容器有读写权限**的迭代器 的同时，你对原容器本身也有读写权限，导致可能出现的多写多读问题。
+
+```cpp
+#include <bits/stdc++.h>
+
+int main()
+{
+    std::vector<int> vec;
+    std::vector<int> vec2{1, 2, 3, 4, 5};
+
+    // 可能触发扩容的操作
+    vec.push_back(1);
+    vec.insert(vec.end(), 2);
+    vec.insert(vec.begin(), vec2.begin(), vec2.end());
+
+    // 元素的删除操作会导致后续的元素位置发生改变
+    // 引起迭代器失效
+    auto iter = std::find(vec.begin(), vec.end(), 5);
+    vec.erase(iter);
+
+    // 插入元素会因为扩容导致迭代器指向被释放的内存
+    // 引起迭代器失效（空悬迭代器）
+    std::vector<int> vec3{1, 2, 3};
+    for (auto it = vec3.begin(); it != vec3.end(); it++)
+    {
+        vec3.push_back(*it);
+        std::cout << *it << " ";
+    }
+    return 0;
+}
+```
+
+### List
+
+纯 C 风格的 List
+
+```cpp
+#include <bits/stdc++.h>
+
+// template <typename T>
+// using List = std::forward_list<T>;
+
+// 如果不使用指针而是使用类型本身，则类型的大小满足 size := 4 + size
+typedef struct ListNode
+{
+    int              data;
+    struct ListNode* next;
+} * List, ListNode;
+
+int main() 
+{
+    // 声明一个链表
+    List list;
+
+    // 创建一个节点作为头结点
+    ListNode* head = (ListNode*)malloc(sizeof(ListNode));
+    head->data = 0;
+    head->next = nullptr;
+
+    // 将头结点赋值给链表
+    list = head;
+
+    // 在末尾新增节点
+    ListNode* last = head;
+    ListNode* new_node = (ListNode*)malloc(sizeof(ListNode));
+    new_node->data = 0;
+    new_node->next = nullptr;
+    last->next = new_node;
+
+    // 遍历链表
+    ListNode* cursor = head->next;
+    while (cursor != nullptr)
+    {
+        printf("%d, ", cursor->data);
+        cursor = cursor->next;
+    }
+}
+```
+
+C with Class 版本
+
+```cpp
+#include <bits/stdc++.h>
+
+// template <typename T>
+// using List = std::forward_list<T>;
+
+// 如果不使用指针而是使用类型本身，则类型的大小满足 size := 4 + size
+class ListNode
+{
+public:
+    ListNode() = default;
+
+    ListNode(int _data, ListNode* _next) : data(_data), next(_next) {}
+
+    int       data;
+    ListNode* next;
+};
+
+int main() 
+{
+    // 创建链表
+    ListNode* head = new ListNode(-1, nullptr);
+
+    // 添加节点
+    ListNode* last = head;
+    last->next = new ListNode(1, new ListNode(2, nullptr));
+    last = last->next->next;
+
+    // 遍历链表
+    // prev: previous 前一个元素
+    // curr: current 当前元素
+    // next: 下一个元素
+    auto curr = head->next;
+    while (curr)
+    {
+        std::cout << curr->data << " ";
+        curr = curr->next;
+    }
+}
+```
+
+用标准库
+
+```cpp
+#include <bits/stdc++.h>
+
+// template <typename T>
+// using List = std::forward_list<T>;
+
+// 如果不使用指针而是使用类型本身，则类型的大小满足 size := 4 + size
+class ListNode
+{
+public:
+    ListNode() = default;
+
+    ListNode(int _data, ListNode* _next) : data(_data), next(_next) {}
+
+    int       data;
+    ListNode* next;
+};
+
+int main() 
+{
+    // 创建链表
+    ListNode* head = new ListNode(-1, nullptr);
+
+    // 添加节点
+    ListNode* last = head;
+    last->next = new ListNode(1, new ListNode(2, nullptr));
+    last = last->next->next;
+
+    // 遍历链表
+    // prev: previous 前一个元素
+    // curr: current 当前元素
+    // next: 下一个元素
+    auto curr = head->next;
+    while (curr)
+    {
+        std::cout << curr->data << " ";
+        curr = curr->next;
+    }
+}
+```
+
+最 C++ 的写法
+
+```cpp
+#include <bits/stdc++.h>
+
+template <typename T>
+using List = std::forward_list<T>;
+
+int main()
+{
+    List<int> list {1, 2};
+    
+    for (auto elem: list)
+    {
+        std::cout << elem << " ";
+    }
+    
+    return 0;
+}
+```
+
+```cpp
+#include <bits/stdc++.h>
+
+template <typename T>
+using List = std::forward_list<T>;
+
+// 侵入式、非侵入式
+// 链表是一个结构化的数据。手动实现的 ListNode
+// 节点中不仅包含了数据信息，也包含了整个链表的结构化信息
+// 标准库的链表是非侵入式实现的，它的数据信息和链表结构信息并没有放在一个结构体里。
+// 这两者主要的区别发生在使用自定义结构体作为链表元素的时候。
+
+struct MyData
+{
+    std::mutex          lock;
+    std::allocator<int> allocator;
+    std::unordered_map<
+        std::string,
+        std::vector<std::pair<std::pair<int, int>, std::stack<int>>>>
+        strange_data;
+};
+
+// // 在不能修改用户信息结构体的情况下，无法实现侵入式链表
+// class MyData
+// {
+//     ...;
+//     MyData* next;
+// };
+
+// 如果定义一个新的结构体，包含一个 MyData 对象和一个指向自身的指针
+// 此时其实已经看成是非侵入式实现了。（这个非侵入是相对 MyData 而言的）
+struct MyDataNode
+{
+    MyData data;
+    MyDataNode* next;
+};
+
+// 实际访问的时候需要套壳
+// MyDataNode* node;
+// node->data.strange_data;
+
+// 使用标准库的非侵入式实现，缺点是内存不友好
+// List<MyData> list;
+// auto node = list.begin();
+// node->strange_data;
+
+int main() {}
+```
+
+### vector 和 list 区别
+
+- 扩容方式不同：前者一次申请多个元素内存，后者一次新建一个节点
+- 迭代器失效条件不同：前者插删都可能导致迭代器失效，后者仅在删除迭代器指向元素时引起迭代器失效
+- 元素访问方式不同：前者是随机访问迭代器（可以通过下标直接访问对应元素），后者是前向迭代器（访问指定元素的复杂度为线性）
+
+### 树
+
+C 风格的实现 
+
+```cpp
+#include <bits/stdc++.h>
+
+template <typename Data>
+struct TreeNode
+{
+    Data      data;
+    TreeNode* left;
+    TreeNode* right;
+
+    TreeNode(Data data, TreeNode* left, TreeNode* right)
+        : data(data), left(left), right(right){};
+};
+
+int main()
+{
+    auto* root = new TreeNode<int>(0, new TreeNode<int>(1, nullptr, nullptr),
+                                   new TreeNode<int>(2, nullptr, nullptr));
+
+    root->data;
+    root = root->left;
+    root = root->right;
+
+    auto dfs = [](...) {};
+
+    dfs(root->left, root->data);
+}
+```
